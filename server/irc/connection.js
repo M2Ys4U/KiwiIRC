@@ -10,18 +10,7 @@ var net             = require('net'),
     IrcUser         = require('./user.js'),
     EE              = require('../ee.js'),
     iconv           = require('iconv-lite'),
-    Socks;
-
-
-// Break the Node.js version down into usable parts
-var version_values = process.version.substr(1).split('.').map(function (item) {
-    return parseInt(item, 10);
-});
-
-// If we have a suitable Nodejs version, bring int he socks functionality
-if (version_values[1] >= 10) {
-    Socks = require('socksjs');
-}
+    Socks           = require('socksjs');
 
 var IrcConnection = function (hostname, port, ssl, nick, user, options, state, con_num) {
     var that = this;
@@ -543,11 +532,8 @@ function onUserKick(event){
  */
 var rawSocketConnect = function(socket) {
     // Make note of the port numbers for any identd lookups
-    // Nodejs < 0.9.6 has no socket.localPort so check this first
-    if (typeof socket.localPort != 'undefined') {
-        this.identd_port_pair = socket.localPort.toString() + '_' + socket.remotePort.toString();
-        global.clients.port_pairs[this.identd_port_pair] = this;
-    }
+    this.identd_port_pair = socket.localPort.toString() + '_' + socket.remotePort.toString();
+    global.clients.port_pairs[this.identd_port_pair] = this;
 };
 
 

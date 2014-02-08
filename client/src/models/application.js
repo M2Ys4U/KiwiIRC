@@ -70,7 +70,8 @@ _kiwi.model.Application = function () {
 
 
         this.showIntialConenctionDialog = function() {
-            var connection_dialog = new _kiwi.model.NewConnection();
+            var connection_dialog = new _kiwi.model.NewConnection(),
+                that = this;
             this.populateDefaultServerSettings(connection_dialog);
 
             connection_dialog.view.$el.addClass('initial');
@@ -100,6 +101,23 @@ _kiwi.model.Application = function () {
 
             };
             _kiwi.gateway.on('onconnect', fn);
+
+            //TODO: This is a little bit of a hack, should probably refactor at some point. ^JA
+            $('[data-setting="locale"]', this.view.$el).on('change', function (event) {
+                var target = event.currentTarget,
+                    new_locale = $(target[$(target, this).prop('selectedIndex')]).val();
+
+                _kiwi.global.loadLocale({locale: new_locale}, function (locale) {
+                    if (locale) {
+                        _kiwi.global.settings.set('locale', Object.keys(locale)[0]);
+                        _kiwi.global.settings.save();
+
+                        _kiwi.gateway.off('onconnect', fn);
+                        connection_dialog.view.dispose();
+                        that.showIntialConenctionDialog();
+                    }
+                });
+            });
         };
 
 

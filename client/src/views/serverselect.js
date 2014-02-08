@@ -26,7 +26,9 @@ _kiwi.view.ServerSelect = function () {
                     server_network: _kiwi.global.i18n.translate('client_views_serverselect_server_and_network').fetch(),
                     server: _kiwi.global.i18n.translate('client_views_serverselect_server').fetch(),
                     port: _kiwi.global.i18n.translate('client_views_serverselect_port').fetch(),
-                    powered_by: _kiwi.global.i18n.translate('client_views_serverselect_poweredby').fetch()
+                    powered_by: _kiwi.global.i18n.translate('client_views_serverselect_poweredby').fetch(),
+                    languages: _kiwi.app.translations,
+                    current_language: _kiwi.global.settings.get('locale') || 'en-gb'
                 };
 
             this.$el = $(_.template($('#tmpl_server_select').html().trim(), text));

@@ -309,7 +309,7 @@
                     <div class="control-group">
                         <select data-setting="locale">
                             <% _.forEach(languages, function(lang) { %>
-                                <option value="<%= lang.tag %>"><%= lang.language %></li>
+                                <option value="<%= lang.tag %>"<%= (lang.tag === current_language)? ' selected' : '' %>><%= lang.language %>
                             <% }); %>
                         </select>
                         <br>

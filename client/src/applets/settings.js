@@ -19,6 +19,7 @@
                 emoticons: _kiwi.global.i18n.translate('client_applets_settings_emoticons').fetch(),
                 scroll_history: _kiwi.global.i18n.translate('client_applets_settings_history_length').fetch(),
                 languages: _kiwi.app.translations,
+                current_language: _kiwi.global.settings.get('locale') || 'en-gb',
                 default_client: _kiwi.global.i18n.translate('client_applets_settings_default_client').fetch(),
                 make_default: _kiwi.global.i18n.translate('client_applets_settings_default_client_enable').fetch(),
                 locale_restart_needed: _kiwi.global.i18n.translate('client_applets_settings_locale_restart_needed').fetch(),

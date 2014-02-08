@@ -105,26 +105,8 @@ _kiwi.global = {
 
     // Entry point to start the kiwi application
     start: function (opts, callback) {
-        var continueStart, locale;
+        var locale_opts;
         opts = opts || {};
-
-        continueStart = function (locale, s, xhr) {
-            if (locale) {
-                _kiwi.global.i18n = new Jed({locale_data: locale, domain: xhr.getResponseHeader('Content-Language')});
-            } else {
-                _kiwi.global.i18n = new Jed();
-            }
-
-            _kiwi.app = new _kiwi.model.Application(opts);
-
-            // Start the client up
-            _kiwi.app.start();
-
-            // Now everything has started up, load the plugin manager for third party plugins
-            _kiwi.global.plugins = new _kiwi.model.PluginManager();
-
-            callback && callback();
-        };
 
         // Set up the settings datastore
         _kiwi.global.settings = _kiwi.model.DataStore.instance('kiwi.settings');
@@ -133,11 +115,48 @@ _kiwi.global = {
         // Set the window title
         window.document.title = opts.server_settings.client.window_title || 'Kiwi IRC';
 
-        locale = _kiwi.global.settings.get('locale');
-        if (!locale) {
-            $.getJSON(opts.base_path + '/assets/locales/magic.json', continueStart);
+        locale_opts = {
+            locale: _kiwi.global.settings.get('locale'),
+            base_path: opts.base_path
+        };
+
+        _kiwi.global.loadLocale(locale_opts, function continueStart() {
+            _kiwi.app = new _kiwi.model.Application(opts);
+
+            // Start the client up
+            _kiwi.app.start();
+
+            // Now everything has started up, load the plugin manager for third party plugins
+            _kiwi.global.plugins = new _kiwi.model.PluginManager();
+
+            if (callback && typeof callback === 'function') {
+                callback();
+            }
+        });
+    },
+
+    loadLocale: function (opts, callback) {
+        opts = opts || {};
+        var continueLocaleLoading = function (locale, s, xhr) {
+            if (locale) {
+                _kiwi.global.i18n = new Jed({locale_data: locale, domain: xhr.getResponseHeader('Content-Language')});
+            } else {
+                _kiwi.global.i18n = new Jed();
+            }
+
+            if (callback && typeof callback === 'function') {
+                callback(locale);
+            }
+        };
+
+        if (!opts.base_path) {
+            opts.base_path = _kiwi.app.get('base_path');
+        }
+
+        if (!opts.locale) {
+            $.getJSON(opts.base_path + '/assets/locales/magic.json', continueLocaleLoading);
         } else {
-            $.getJSON(opts.base_path + '/assets/locales/' + locale + '.json', continueStart);
+            $.getJSON(opts.base_path + '/assets/locales/' + opts.locale + '.json', continueLocaleLoading);
         }
     }
 };

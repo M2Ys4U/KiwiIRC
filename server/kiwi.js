@@ -241,7 +241,7 @@ if (global.config.identd && global.config.identd.enabled) {
 
 // Start up a weblistener for each found in the config
 _.each(global.config.servers, function (server) {
-    if (server.type == 'proxy') {
+    if (server.type === 'proxy') {
         // Start up a kiwi proxy server
         var serv = new Proxy.ProxyServer();
         serv.listen(server.port, server.address, server);
@@ -265,15 +265,15 @@ _.each(global.config.servers, function (server) {
         });
 
     } else {
-        // Start up a kiwi web server
-        var wl = new WebListener(server, global.config.transports);
+        // Start up a kiwi web server);
+        var wl = new WebListener(server, global.config.ssl);
 
         wl.on('connection', function (client) {
-            clients.add(client);
+            global.clients.add(client);
         });
 
         wl.on('client_dispose', function (client) {
-            clients.remove(client);
+            global.clients.remove(client);
         });
 
         wl.on('listening', function () {

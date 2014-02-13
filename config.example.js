@@ -27,11 +27,23 @@ conf.servers.push({
 //conf.servers.push({
 //    port:     7777,
 //    address: "0.0.0.0",
-//
-//    ssl:   true,
-//    ssl_key: "server.key",
-//    ssl_cert: "cert.pem"
+
+//    ssl: true,
+//    ssl_config: "default"
 //});
+
+// Do not edit this line!
+conf.ssl = [];
+
+// Example SSL configuration block
+// If SSL is enabled on any server blocks, there MUST be at least one SSL
+// configuration block with the name "default".
+conf.ssl.push({
+    name:       "default",
+    hostname:   "localhost",
+    ssl_key:    "server.key",
+    ssl_cert:   "server.pem"
+});
 
 // Network interface for outgoing connections
 conf.outgoing_address = {

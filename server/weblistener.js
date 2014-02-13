@@ -1,5 +1,6 @@
 var engine       = require('engine.io'),
     events       = require('events'),
+    crypto       = require('crypto'),
     http         = require('http'),
     util         = require('util'),
     fs           = require('fs'),
@@ -23,9 +24,10 @@ rehash.on('rehashed', function (files) {
 var http_handler;
 
 
-var WebListener = module.exports = function (web_config) {
+var WebListener = module.exports = function (web_config, ssl_config) {
     var hs, opts,
-        that = this;
+        that = this,
+        default_ssl_config = _.findWhere(ssl_config, {name: "default"});
 
 
     events.EventEmitter.call(this);
@@ -34,20 +36,33 @@ var WebListener = module.exports = function (web_config) {
 
     if (web_config.ssl) {
         opts = {
-            key: fs.readFileSync(web_config.ssl_key),
-            cert: fs.readFileSync(web_config.ssl_cert)
+            key: fs.readFileSync(default_ssl_config.ssl_key),
+            cert: fs.readFileSync(default_ssl_config.ssl_cert),
+
+            SNICallback: function (servername) {
+                var ssl_config_block,
+                    details;
+
+                if ((ssl_config_block = _.findWhere(ssl_config, {hostname: servername}))) {
+                    details = {
+                        key: fs.readFileSync(ssl_config_block.ssl_key),
+                        cert: fs.readFileSync(ssl_config_block.ssl_cert)
+                    };
+                    findIntermediateCertificates(ssl_config_block, details);
+                } else {
+                    details = {
+                        key: fs.readFileSync(default_ssl_config.ssl_key),
+                        cert: fs.readFileSync(default_ssl_config.ssl_cert)
+                    };
+                    findIntermediateCertificates(default_ssl_config, details);
+                }
+
+                return crypto.createCredentials(details).context;
+            }
         };
 
         // Do we have an intermediate certificate?
-        if (typeof web_config.ssl_ca !== 'undefined') {
-            // An array of them?
-            if (typeof web_config.ssl_ca.map !== 'undefined') {
-                opts.ca = web_config.ssl_ca.map(function (f) { return fs.readFileSync(f); });
-
-            } else {
-                opts.ca = fs.readFileSync(web_config.ssl_ca);
-            }
-        }
+        findIntermediateCertificates(default_ssl_config, opts);
 
         hs = spdy.createServer(opts, handleHttpRequest);
 
@@ -95,7 +110,16 @@ var WebListener = module.exports = function (web_config) {
 };
 util.inherits(WebListener, events.EventEmitter);
 
-
+function findIntermediateCertificates(ssl_config_block, opts) {
+    if (typeof ssl_config_block.ssl_ca !== 'undefined') {
+        // An array of them?
+        if (typeof ssl_config_block.ssl_ca.map !== 'undefined') {
+            opts.ca = ssl_config_block.ssl_ca.map(function (f) { return fs.readFileSync(f); });
+        } else {
+            opts.ca = fs.readFileSync(ssl_config_block.ssl_ca);
+        }
+    }
+}
 
 function handleHttpRequest(request, response) {
     http_handler.serve(request, response);

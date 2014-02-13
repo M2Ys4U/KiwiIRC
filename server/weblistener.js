@@ -1,12 +1,9 @@
 var engine       = require('engine.io'),
-    WebsocketRpc = require('./websocketrpc.js');
     events       = require('events'),
     http         = require('http'),
-    https        = require('https'),
     util         = require('util'),
     fs           = require('fs'),
     dns          = require('dns'),
-    url          = require('url'),
     _            = require('lodash'),
     spdy         = require('spdy'),
     ipaddr       = require('ipaddr.js'),

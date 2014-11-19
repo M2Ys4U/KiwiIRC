@@ -9,8 +9,10 @@ var fs          = require('fs'),
     Proxy       = require('./proxy.js'),
     ControlInterface = require('./controlinterface.js');
 
+// Set process title
+process.title = 'kiwiirc';
 
-
+// Set working directory
 process.chdir(__dirname + '/../');
 
 // Get our own version from package.json
@@ -29,45 +31,53 @@ global.build_version = require('../package.json').version;
 
 })(process.argv);
 
-
-// If we're not running in the forground and we have a log file.. switch
-// console.log to output to a file
-if (process.argv.indexOf('-f') === -1 && global.config && global.config.log) {
-    (function () {
-        var log_file_name = global.config.log;
-
+// Set up logging
+(function () {
+    var maybe_use_file = function (log_file_name) {
         if (log_file_name[0] !== '/') {
             log_file_name = __dirname + '/../' + log_file_name;
         }
+        if (process.argv.indexOf('-f') === -1) {
+            winston.add(winston.transports.File, {
+                filename: log_file_name,
+                json: false,
+                timestamp: function() {
+                    var year, month, day, time_string,
+                        d = new Date();
 
-        winston.add(winston.transports.File, {
-            filename: log_file_name,
-            json: false,
-            timestamp: function() {
-                var year, month, day, time_string,
-                    d = new Date();
+                    year = String(d.getFullYear());
+                    month = String(d.getMonth() + 1);
+                    if (month.length === 1) {
+                        month = "0" + month;
+                    }
 
-                year = String(d.getFullYear());
-                month = String(d.getMonth() + 1);
-                if (month.length === 1) {
-                    month = "0" + month;
+                    day = String(d.getDate());
+                    if (day.length === 1) {
+                        day = "0" + day;
+                    }
+
+                    // Take the time from the existing toTimeString() format
+                    time_string = (new Date()).toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
+
+                    return year + "-" + month + "-" + day + ' ' + time_string;
                 }
-
-                day = String(d.getDate());
-                if (day.length === 1) {
-                    day = "0" + day;
-                }
-
-                // Take the time from the existing toTimeString() format
-                time_string = (new Date()).toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
-
-                return year + "-" + month + "-" + day + ' ' + time_string;
+            });
+            winston.remove(winston.transports.Console);
+        }
+    };
+    if (global.config && global.config.log) {
+        if (global.config.log === "journald") {
+            try {
+                winston.add(require('journald').WinstonTransport.Journald);
+                winston.remove(winston.transports.Console);
+            } catch (e) {
+                maybe_use_file("kiwi.log");
             }
-        });
-
-        winston.remove(winston.transports.Console);
-    })();
-}
+        } else {
+            maybe_use_file(global.config.log);
+        }
+    }
+}())
 
 
 
@@ -339,9 +349,6 @@ function webListenerRunning() {
 /*
  * Process settings
  */
-
-// Set process title
-process.title = 'kiwiirc';
 
 // Change UID/GID
 function setProcessUid() {

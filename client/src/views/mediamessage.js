@@ -28,8 +28,8 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
     open: function () {
         // Create the content div if we haven't already
         if (!this.$content) {
-            this.$content = $('<div class="media_content"><a class="media_close"><i class="fa fa-chevron-up"></i> ' + _kiwi.global.i18n.translate('client_views_mediamessage_close').fetch() + '</a><br /><div class="content"></div></div>');
-            this.$content.find('.content').append(this.mediaTypes[this.$el.data('type')].apply(this, []) || _kiwi.global.i18n.translate('client_views_mediamessage_notfound').fetch() + ' :(');
+            this.$content = $('<div class="media_content"><a class="media_close"><i class="fa fa-chevron-up"></i> ' + _kiwi.global.i18n.translate('client_views_mediamessage_close').fetch() + '</a><br /><iframe sandbox="allow-script allow-forms allow-popups" class="content" src="about:blank"></iframe></div>');
+            srcDoc(this.$content.find('.content')[0], this.mediaTypes[this.$el.data('type')].apply(this, []) || _kiwi.global.i18n.translate('client_views_mediamessage_notfound').fetch() + ' :(');
         }
 
         // Now show the content if not already
@@ -52,7 +52,7 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
             var that = this;
 
             $.getJSON('https://api.twitter.com/1/statuses/oembed.json?id=' + tweet_id + '&callback=?', function (data) {
-                that.$content.find('.content').html(data.html);
+                srcDoc.set(that.$content.find('.content')[0], data.html);
             });
 
             return $('<div>' + _kiwi.global.i18n.translate('client_views_mediamessage_load_tweet').fetch() + '...</div>');
@@ -69,7 +69,7 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
 
             $.getJSON('http://api.imgur.com/oembed?url=' + this.url, function (data) {
                 var img_html = '<a href="' + data.url + '" target="_blank"><img height="100" src="' + data.url + '" /></a>';
-                that.$content.find('.content').html(img_html);
+                srcDoc(that.$content.find('.content')[0], img_html);
             });
 
             return $('<div>' + _kiwi.global.i18n.translate('client_views_mediamessage_load_image').fetch() + '...</div>');
@@ -105,7 +105,7 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
                 tmpl += '<i class="fa fa-arrow-up"></i> <%- ups %> &nbsp;&nbsp; <i class="fa fa-arrow-down"></i> <%- downs %><br />';
                 tmpl += '<%- num_comments %> comments made. <a href="http://www.reddit.com<%- permalink %>">View post</a></div>';
 
-                that.$content.find('.content').html(_.template(tmpl, post));
+                srcDoc(that.$content.find('.content')[0], _.template(tmpl, post));
             });
 
             return $('<div>' + _kiwi.global.i18n.translate('client_views_mediamessage_load_reddit').fetch() + '...</div>');
@@ -116,7 +116,7 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
             var ytid = this.$el.data('ytid');
             var that = this;
             var yt_html = '<iframe width="480" height="270" src="https://www.youtube.com/embed/'+ ytid +'?feature=oembed" frameborder="0" allowfullscreen=""></iframe>';
-            that.$content.find('.content').html(yt_html);
+            srcDoc(that.$content.find('.content')[0], yt_html);
 
             return $('');
         },
@@ -128,7 +128,7 @@ _kiwi.view.MediaMessage = Backbone.View.extend({
 
             $.getJSON('https://gist.github.com/'+matches[1]+'.json?callback=?' + (matches[2] || ''), function (data) {
                 $('body').append('<link rel="stylesheet" href="' + data.stylesheet + '" type="text/css" />');
-                that.$content.find('.content').html(data.div);
+                srcDoc(that.$content.find('.content')[0], data.div);
             });
 
             return $('<div>' + _kiwi.global.i18n.translate('client_views_mediamessage_load_gist').fetch() + '...</div>');

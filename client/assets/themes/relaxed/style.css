@@ -159,6 +159,8 @@
 #kiwi .messages .msg .media .media_content { margin:10px 0 0 10px; overflow:hidden; }
 #kiwi .messages .msg .media .media_content img { padding:3px; border:1px solid gray; }
 #kiwi .messages .msg .media .media_content > .content {
+    position: relative;
+    width: 100%;
     background: white;
     overflow: hidden;
     padding: 10px;

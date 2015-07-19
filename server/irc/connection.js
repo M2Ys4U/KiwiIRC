@@ -1,7 +1,6 @@
 var net             = require('net'),
     tls             = require('tls'),
     util            = require('util'),
-    dns             = require('dns'),
     _               = require('lodash'),
     winston         = require('winston'),
     EventBinder     = require('./eventbinder.js'),
@@ -9,6 +8,7 @@ var net             = require('net'),
     IrcCommands     = require('./commands.js'),
     IrcChannel      = require('./channel.js'),
     IrcUser         = require('./user.js'),
+    dns             = require('../dns.js'),
     EE              = require('../ee.js'),
     iconv           = require('iconv-lite'),
     Proxy           = require('../proxy.js'),
@@ -210,7 +210,7 @@ IrcConnection.prototype.connect = function () {
     this.requested_disconnect = false;
 
     // Get the IP family for the dest_addr (either socks or IRCd destination)
-    getConnectionFamily(dest_addr, function getConnectionFamilyCb(err, family, host) {
+    dns.getConnectionFamily(dest_addr, function getConnectionFamilyCb(err, family, host) {
         var outgoing;
 
         // Decide which net. interface to make the connection through
@@ -573,30 +573,6 @@ IrcConnection.prototype.setEncoding = function (encoding) {
         return false;
     }
 };
-
-function getConnectionFamily(host, callback) {
-    if (net.isIP(host)) {
-        if (net.isIPv4(host)) {
-            callback(null, 'IPv4', host);
-        } else {
-            callback(null, 'IPv6', host);
-        }
-    } else {
-        dns.resolve6(host, function resolve6Cb(err, addresses) {
-            if (!err) {
-                callback(null, 'IPv6', addresses[0]);
-            } else {
-                dns.resolve4(host, function resolve4Cb(err, addresses) {
-                    if (!err) {
-                        callback(null, 'IPv4',addresses[0]);
-                    } else {
-                        callback(err);
-                    }
-                });
-            }
-        });
-    }
-}
 
 
 function onChannelJoin(event) {

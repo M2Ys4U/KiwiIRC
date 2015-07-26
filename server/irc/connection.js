@@ -2,7 +2,6 @@ var net             = require('net'),
     tls             = require('tls'),
     util            = require('util'),
     _               = require('lodash'),
-    winston         = require('winston'),
     EventBinder     = require('./eventbinder.js'),
     IrcServer       = require('./server.js'),
     IrcCommands     = require('./commands.js'),
@@ -13,6 +12,7 @@ var net             = require('net'),
     iconv           = require('iconv-lite'),
     Proxy           = require('../proxy.js'),
     Stats           = require('../stats.js'),
+    Parser          = require('./parser.js'),
     Socks;
 
 
@@ -27,6 +27,8 @@ if (version_values[1] >= 10) {
 }
 
 var IrcConnection = function (hostname, port, ssl, nick, user, options, state, con_num) {
+    var that = this;
+
     EE.call(this,{
         wildcard: true,
         delimiter: ' '
@@ -45,9 +47,6 @@ var IrcConnection = function (hostname, port, ssl, nick, user, options, state, c
 
     // Number of times we have tried to reconnect
     this.reconnect_attempts = 0;
-
-    // Last few lines from the IRCd for context when disconnected (server errors, etc)
-    this.last_few_lines = [];
 
     // IRCd write buffers (flood controll)
     this.write_buffer = [];
@@ -68,6 +67,18 @@ var IrcConnection = function (hostname, port, ssl, nick, user, options, state, c
     this.gecos = ''; // Users real-name. Uses default from config if empty
     this.password = options.password || '';
     this.quit_message = ''; // Uses default from config if empty
+
+    this.parser = new Parser();
+
+    this.parser.on('data', function (msg_obj) {
+        that.irc_commands.dispatch(new IrcCommands.Command(msg_obj.command.toUpperCase(), msg_obj));
+    });
+
+    this.parser.on('error', function () {
+        that.socket.unpipe(this);
+        this.clear();
+        that.socket.destroy();
+    });
 
     // Set the passed encoding. or the default if none giving or it fails
     if (!options.encoding || !this.setEncoding(options.encoding)) {
@@ -143,7 +154,12 @@ util.inherits(IrcConnection, EE);
 
 module.exports.IrcConnection = IrcConnection;
 
-
+// Last few lines from the IRCd for context when disconnected (server errors, etc)
+Object.defineProperty(IrcConnection.prototype, 'last_few_lines', {
+    get: function () {
+        return this.parser.last_few_lines;
+    }
+});
 
 /**
  * Create and keep track of all timers so they can be easily removed
@@ -323,9 +339,7 @@ IrcConnection.prototype.connect = function () {
             that.emit('error', event);
         });
 
-        that.socket.on('data', function () {
-            socketOnData.apply(that, arguments);
-        });
+        that.socket.pipe(that.parser);
 
         that.socket.on('close', function socketCloseCb(had_error) {
             // If that.connected is false, we never actually managed to connect
@@ -566,6 +580,7 @@ IrcConnection.prototype.setEncoding = function (encoding) {
         //(Avoid the use of base64 or incompatible encodings)
         if (encoded_test == "TEST") { // jshint ignore:line
             this.encoding = encoding;
+            this.parser.encoding = encoding;
             return true;
         }
         return false;
@@ -764,147 +779,4 @@ function findWebIrc(connect_data) {
     }
 
     return connect_data;
-}
-
-
-/**
- * Buffer any data we get from the IRCd until we have complete lines.
- */
-function socketOnData(data) {
-    var data_pos,               // Current position within the data Buffer
-        line_start = 0,
-        lines = [],
-        i,
-        max_buffer_size = 1024; // 1024 bytes is the maximum length of two RFC1459 IRC messages.
-                                // May need tweaking when IRCv3 message tags are more widespread
-
-    // Split data chunk into individual lines
-    for (data_pos = 0; data_pos < data.length; data_pos++) {
-        if (data[data_pos] === 0x0A) { // Check if byte is a line feed
-            lines.push(data.slice(line_start, data_pos));
-            line_start = data_pos + 1;
-        }
-    }
-
-    // No complete lines of data? Check to see if buffering the data would exceed the max buffer size
-    if (!lines[0]) {
-        if ((this.held_data ? this.held_data.length : 0 ) + data.length > max_buffer_size) {
-            // Buffering this data would exeed our max buffer size
-            this.emit('error', 'Message buffer too large');
-            this.socket.destroy();
-
-        } else {
-
-            // Append the incomplete line to our held_data and wait for more
-            if (this.held_data) {
-                this.held_data = Buffer.concat([this.held_data, data], this.held_data.length + data.length);
-            } else {
-                this.held_data = data;
-            }
-        }
-
-        // No complete lines to process..
-        return;
-    }
-
-    // If we have an incomplete line held from the previous chunk of data
-    // merge it with the first line from this chunk of data
-    if (this.hold_last && this.held_data !== null) {
-        lines[0] = Buffer.concat([this.held_data, lines[0]], this.held_data.length + lines[0].length);
-        this.hold_last = false;
-        this.held_data = null;
-    }
-
-    // If the last line of data in this chunk is not complete, hold it so
-    // it can be merged with the first line from the next chunk
-    if (line_start < data_pos) {
-        if ((data.length - line_start) > max_buffer_size) {
-            // Buffering this data would exeed our max buffer size
-            this.emit('error', 'Message buffer too large');
-            this.socket.destroy();
-            return;
-        }
-
-        this.hold_last = true;
-        this.held_data = new Buffer(data.length - line_start);
-        data.copy(this.held_data, 0, line_start);
-    }
-
-    // Process our data line by line
-    for (i = 0; i < lines.length; i++) {
-        parseIrcLine.call(this, lines[i]);
-    }
-
-}
-
-
-
-/**
- * The regex that parses a line of data from the IRCd
- * Deviates from the RFC a little to support the '/' character now used in some
- * IRCds
- */
-var parse_regex = /^(?:(?:(?:@([^ ]+) )?):(?:([^\s!]+)|([^\s!]+)!([^\s@]+)@?([^\s]+)?) )?(\S+)(?: (?!:)(.+?))?(?: :(.*))?$/i;
-
-function parseIrcLine(buffer_line) {
-    var msg,
-        i,
-        tags = [],
-        tag,
-        line = '',
-        msg_obj,
-        hold_last_lines;
-
-    // Decode server encoding
-    line = iconv.decode(buffer_line, this.encoding);
-    if (!line) {
-        return;
-    }
-
-    // Parse the complete line, removing any carriage returns
-    msg = parse_regex.exec(line.replace(/^\r+|\r+$/, ''));
-
-    if (!msg) {
-        // The line was not parsed correctly, must be malformed
-        winston.warn('Malformed IRC line: %s', line.replace(/^\r+|\r+$/, ''));
-        return;
-    }
-
-    // If enabled, keep hold of the last X lines
-    if (global.config.hold_ircd_lines) {
-        this.last_few_lines.push(line.replace(/^\r+|\r+$/, ''));
-
-        // Trim the array down if it's getting to long. (max 3 by default)
-        hold_last_lines = parseInt(global.config.hold_ircd_lines, 10) || 3;
-
-        if (this.last_few_lines.length > hold_last_lines) {
-            this.last_few_lines = this.last_few_lines.slice(this.last_few_lines.length - hold_last_lines);
-        }
-    }
-
-    // Extract any tags (msg[1])
-    if (msg[1]) {
-        tags = msg[1].split(';');
-
-        for (i = 0; i < tags.length; i++) {
-            tag = tags[i].split('=');
-            tags[i] = {tag: tag[0], value: tag[1]};
-        }
-    }
-
-    msg_obj = {
-        tags:       tags,
-        prefix:     msg[2],
-        nick:       msg[3] || msg[2],  // Nick will be in the prefix slot if a full user mask is not used
-        ident:      msg[4] || '',
-        hostname:   msg[5] || '',
-        command:    msg[6],
-        params:     msg[7] ? msg[7].split(/ +/) : []
-    };
-
-    if (msg[8]) {
-        msg_obj.params.push(msg[8].trimRight());
-    }
-
-    this.irc_commands.dispatch(new IrcCommands.Command(msg_obj.command.toUpperCase(), msg_obj));
 }

@@ -498,7 +498,7 @@ describe('server/irc/parser.js', function () {
                 }, done);
             });
 
-            it('should parse a message that has a tag with a value and a nick!ident@hostname prefix', function (done) {
+            it('should parse a message that has a tag with a value and a nick@hostname prefix', function (done) {
                 parser.write('@foo=bar :nick@example.org TEST\r\n');
 
                 expectOutputCalledWith({
@@ -508,7 +508,6 @@ describe('server/irc/parser.js', function () {
                     }],
                     command: 'TEST',
                     nick: 'nick',
-                    ident: 'ident',
                     hostname: 'example.org'
                 }, done);
             });
@@ -613,7 +612,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags where one has a value and one does not and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo=bar;baz :nick@example.org TEST\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1749,7 +1748,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single "trailing" parameter and a hostname prefix', function (done) {
-                parser.write('@foo;=barbarz:irc.example.org TEST :bar\r\n');
+                parser.write('@foo=bar;baz :irc.example.org TEST :bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1769,7 +1768,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single empty "trailing" parameter and a hostname prefix', function (done) {
-                parser.write('@f=baroo;zar :irc.example.org TEST :\r\n');
+                parser.write('@foo=bar;baz :irc.example.org TEST :\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1789,7 +1788,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters and a hostname prefix', function (done) {
-                parser.write('@foo;bar=bar :izc.example.org TEST bar baz\r\n');
+                parser.write('@foo=bar;baz :irc.example.org TEST bar baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1809,7 +1808,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters (one of which is "trailing") and a hostname prefix', function (done) {
-                parser.write('@foo;bar =bar:irz.example.org TEST bar :baz\r\n');
+                parser.write('@foo=bar;baz :irc.example.org TEST bar :baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1829,7 +1828,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a "trailing" parameter that has spaces and a hostname prefix', function (done) {
-                parser.write('@foo;bar :i=barrc.zxample.org TEST :hello world\r\n');
+                parser.write('@foo=bar;baz :irc.example.org TEST :hello world\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1849,7 +1848,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single parameter and a nick@hostname prefix', function (done) {
-                parser.write('@foo;=barbarz:nick@example.org TEST bar\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1870,7 +1869,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single parameter and a nick@hostname prefix', function (done) {
-                parser.write('@foo;=barbarz:nick@example.org TEST bar\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1891,7 +1890,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single "trailing" parameter and a nick@hostname prefix', function (done) {
-                parser.write('@foo;b=barar znick@example.org TEST :bar\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST :bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1912,7 +1911,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single empty "trailing" parameter and a nick@hostname prefix', function (done) {
-                parser.write('@fo=baro;bzr :nick@example.org TEST :\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST :\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1933,7 +1932,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters and a nick@hostname prefix', function (done) {
-                parser.write('@foo;bar =bar:nizk@example.org TEST bar baz\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST bar baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1954,7 +1953,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters (one of which is "trailing") and a nick@hostname prefix', function (done) {
-                parser.write('@foo;bar :=barnicz@example.org TEST bar :baz\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST bar :baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1975,7 +1974,7 @@ describe('server/irc/parser.js', function () {
             });
             
             it('should parse a message that has multiple tags one with a value, a "trailing" parameter that has spaces and a nick@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzexample.org TEST :hello world\r\n');
+                parser.write('@foo=bar;baz :nick@example.org TEST :hello world\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -1996,7 +1995,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single parameter and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST bar\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2018,7 +2017,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single parameter and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST bar\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2040,7 +2039,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single "trailing" parameter and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST :bar\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST :bar\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2062,7 +2061,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, a single empty "trailing" parameter and a nick@hostname prefix', function (done) {
-                parser.write('@foo;bar =bar:nizk!ident@example.org TEST :\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST :\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2084,7 +2083,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST bar baz\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST bar baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2106,7 +2105,7 @@ describe('server/irc/parser.js', function () {
             });
 
             it('should parse a message that has multiple tags one with a value, multiple parameters (one of which is "trailing") and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST bar :baz\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST bar :baz\r\n');
 
                 expectOutputCalledWith({
                     tags: [
@@ -2128,7 +2127,7 @@ describe('server/irc/parser.js', function () {
             });
             
             it('should parse a message that has multiple tags one with a value, a "trailing" parameter that has spaces and a nick!ident@hostname prefix', function (done) {
-                parser.write('@foo;bar :n=barickzident@example.org TEST :hello world\r\n');
+                parser.write('@foo=bar;baz :nick!ident@example.org TEST :hello world\r\n');
 
                 expectOutputCalledWith({
                     tags: [

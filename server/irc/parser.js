@@ -1,7 +1,8 @@
 var Transform = require('stream').Transform,
     util = require('util'),
     iconv = require('iconv-lite'),
-    winston = require('winston');
+    winston = require('winston'),
+    IrcCommand = require('./command.js');
 
 function Parser(options) {
     Transform.call(this, { readableObjectMode : true });
@@ -148,7 +149,7 @@ Parser.prototype.parseIrcLine = function(buffer_line) {
         msg_obj.params.push(msg[8].trimRight());
     }
 
-    this.push(msg_obj);
+    this.push(new IrcCommand(msg_obj.command.toUpperCase(), msg_obj));
 };
 
 Parser.prototype.clear = function() {

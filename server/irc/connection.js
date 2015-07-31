@@ -4,7 +4,6 @@ var net             = require('net'),
     _               = require('lodash'),
     EventBinder     = require('./eventbinder.js'),
     IrcServer       = require('./server.js'),
-    IrcCommand      = require('./command.js'),
     IrcCommandsHandler = require('./commandshandler.js'),
     IrcChannel      = require('./channel.js'),
     IrcUser         = require('./user.js'),
@@ -72,7 +71,7 @@ var IrcConnection = function (hostname, port, ssl, nick, user, options, state, c
     this.parser = new Parser();
 
     this.parser.on('data', function (msg_obj) {
-        that.irc_commands.dispatch(new IrcCommand(msg_obj.command.toUpperCase(), msg_obj));
+        that.irc_commands.dispatch(msg_obj);
     });
 
     this.parser.on('error', function () {

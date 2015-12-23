@@ -1,7 +1,7 @@
-define('ui/members/member', function(require, exports, module) {
-    module.exports = Backbone.Model.extend({
-        initialize: function (attributes) {
-            var nick, modes, prefix;
+define('ui/members/member', ['lib/backbone', 'ui/members/member_view'], function (Backbone, MemberView) {
+    return Backbone.Model.extend({
+        initialize: function () {
+            var nick, modes;
 
             // The nick may have a mode prefix, we don't want this
             nick = this.stripPrefix(this.get("nick"));
@@ -15,7 +15,7 @@ define('ui/members/member', function(require, exports, module) {
 
             this.updateOpStatus();
 
-            this.view = new (require('./member_view'))({"model": this});
+            this.view = new MemberView({"model": this});
         },
 
 
@@ -54,7 +54,7 @@ define('ui/members/member', function(require, exports, module) {
 
         addMode: function (mode) {
             var modes_to_add = mode.split(''),
-                modes, prefix;
+                modes;
 
             modes = this.get("modes");
             $.each(modes_to_add, function (index, item) {
@@ -72,7 +72,7 @@ define('ui/members/member', function(require, exports, module) {
 
         removeMode: function (mode) {
             var modes_to_remove = mode.split(''),
-                modes, prefix;
+                modes;
 
             modes = this.get("modes");
             modes = _.reject(modes, function (m) {

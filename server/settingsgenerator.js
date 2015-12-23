@@ -170,7 +170,7 @@ function addScripts(vars, debug) {
         vars.scripts.push([
             'assets/kiwi.min.js',
             'assets/libs/engine.io.bundle.min.js',
-            'assets/libs/definenrequire.js'
+            'assets/libs/require.js'
         ]);
         return;
     }
@@ -179,7 +179,7 @@ function addScripts(vars, debug) {
         [
             'assets/libs/engine.io.js',
             'assets/libs/engine.io.tools.js',
-            'assets/libs/definenrequire.js'
+            'assets/libs/require.js'
         ]
     ]);
 

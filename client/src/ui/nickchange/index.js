@@ -1,9 +1,5 @@
-define('ui/nickchange/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/nickchange', ['lib/backbone', 'ui/application', 'helpers/translator'], function (Backbone, Application, translator) {
+    return Backbone.View.extend({
         events: {
             'submit': 'changeNick',
             'click .cancel': 'close'
@@ -11,9 +7,9 @@ define('ui/nickchange/', function(require, exports, module) {
 
         initialize: function () {
             var text = {
-                new_nick: utils.translateText('client_views_nickchangebox_new'),
-                change: utils.translateText('client_views_nickchangebox_change'),
-                cancel: utils.translateText('client_views_nickchangebox_cancel')
+                new_nick: translator.translateText('client_views_nickchangebox_new'),
+                change: translator.translateText('client_views_nickchangebox_change'),
+                cancel: translator.translateText('client_views_nickchangebox_cancel')
             };
             this.$el = $(_.template($('#tmpl_nickchange').html().trim())(text));
         },

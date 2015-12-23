@@ -1,9 +1,5 @@
-define('ui/topicbar/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/topicbar', ['lib/backbone', 'ui/application', 'helpers/translator', 'helpers/formatdate', 'helpers/formatircmsg'], function (Backbone, Application, translator, formatdate, formatIRCMsg) {
+    return Backbone.View.extend({
         events: {
             'keydown div': 'process'
         },
@@ -43,7 +39,7 @@ define('ui/topicbar/', function(require, exports, module) {
             new_topic = new_topic || '';
 
             // We only want a plain text version
-            $('div', this.$el).html(utils.formatIRCMsg(_.escape(new_topic)));
+            $('div', this.$el).html(formatIRCMsg(_.escape(new_topic)));
         },
 
         setCurrentTopicFromChannel: function(channel) {
@@ -53,7 +49,7 @@ define('ui/topicbar/', function(require, exports, module) {
             this.setCurrentTopic(channel.get("topic"));
 
             if (set_by) {
-                set_by_text += utils.translateText('client_models_network_topic', [set_by.nick, require('utils/formatdate')(set_by.when)]);
+                set_by_text += translator.translateText('client_models_network_topic', [set_by.nick, formatdate(set_by.when)]);
                 this.$el.attr('title', set_by_text);
             } else {
                 this.$el.attr('title', '');

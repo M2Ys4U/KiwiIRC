@@ -1,9 +1,4 @@
-define('misc/clientuicommands', function(require, exports, module) {
-
-    var utils = require('helpers/utils');
-
-    module.exports = ClientUiCommands;
-
+define('misc/clientuicommands', ['helpers/translator', 'helpers/tousermask', 'helpers/styletext', 'ui/panels/query', 'ui/panels/applet', 'ui/channelinfo', 'ui/menubox', 'ui/newconnection', 'helpers/settings', 'misc/gateway'], function (translator, toUserMask, styleText, QueryPanel, AppletPanel, ChannelInfo, MenuBox, NewConnection, settings, Gateway) {
     function ClientUiCommands(app, controlbox) {
         this.app = app;
         this.controlbox = controlbox;
@@ -86,56 +81,60 @@ define('misc/clientuicommands', function(require, exports, module) {
         var fn_to_bind = {
             'unknown_command':     unknownCommand,
             'command':             allCommands,
-            'command:msg':         {fn: msgCommand, description: utils.translateText('command_description_msg')},
-            'command:action':      {fn: actionCommand, description: utils.translateText('command_description_action'), aliases: ['me']},
-            'command:join':        {fn: joinCommand, description: utils.translateText('command_description_join'), aliases: ['j']},
-            'command:part':        {fn: partCommand, description: utils.translateText('command_description_part'), aliases: ['p']},
-            'command:cycle':       {fn: cycleCommand, description: utils.translateText('command_description_cycle')},
-            'command:nick':        {fn: nickCommand, description: utils.translateText('command_description_nick')},
-            'command:query':       {fn: queryCommand, description: utils.translateText('command_description_query')},
-            'command:invite':      {fn: inviteCommand, description: utils.translateText('command_description_invite')},
-            'command:topic':       {fn: topicCommand, description: utils.translateText('command_description_topic')},
-            'command:notice':      {fn: noticeCommand, description: utils.translateText('command_description_notice')},
-            'command:quote':       {fn: quoteCommand, description: utils.translateText('command_description_quote'), aliases: ['raw']},
-            'command:kick':        {fn: kickCommand, description: utils.translateText('command_description_kick')},
+            'command:msg':         {fn: msgCommand, description: translator.translateText('command_description_msg')},
+            'command:action':      {fn: actionCommand, description: translator.translateText('command_description_action'), aliases: ['me']},
+            'command:join':        {fn: joinCommand, description: translator.translateText('command_description_join'), aliases: ['j']},
+            'command:part':        {fn: partCommand, description: translator.translateText('command_description_part'), aliases: ['p']},
+            'command:cycle':       {fn: cycleCommand, description: translator.translateText('command_description_cycle')},
+            'command:nick':        {fn: nickCommand, description: translator.translateText('command_description_nick')},
+            'command:query':       {fn: queryCommand, description: translator.translateText('command_description_query')},
+            'command:invite':      {fn: inviteCommand, description: translator.translateText('command_description_invite')},
+            'command:topic':       {fn: topicCommand, description: translator.translateText('command_description_topic')},
+            'command:notice':      {fn: noticeCommand, description: translator.translateText('command_description_notice')},
+            'command:quote':       {fn: quoteCommand, description: translator.translateText('command_description_quote'), aliases: ['raw']},
+            'command:kick':        {fn: kickCommand, description: translator.translateText('command_description_kick')},
             'command:names':       {fn: namesCommand, description: ''},
             'command:mode':        {fn: modeCommand, description: ''},
-            'command:clear':       {fn: clearCommand, description: utils.translateText('command_description_clear')},
-            'command:ctcp':        {fn: ctcpCommand, description: utils.translateText('command_description_ctcp')},
-            'command:quit':        {fn: quitCommand, description: utils.translateText('command_description_quit'), aliases: ['q']},
-            'command:server':      {fn: serverCommand, description: utils.translateText('command_description_server')},
-            'command:whois':       {fn: whoisCommand, description: utils.translateText('command_description_whois'), aliases: ['w']},
-            'command:whowas':      {fn: whowasCommand, description: utils.translateText('command_description_whowas')},
-            'command:away':        {fn: awayCommand, description: utils.translateText('command_description_away')},
-            'command:encoding':    {fn: encodingCommand, description: utils.translateText('command_description_encoding')},
+            'command:clear':       {fn: clearCommand, description: translator.translateText('command_description_clear')},
+            'command:ctcp':        {fn: ctcpCommand, description: translator.translateText('command_description_ctcp')},
+            'command:quit':        {fn: quitCommand, description: translator.translateText('command_description_quit'), aliases: ['q']},
+            'command:server':      {fn: serverCommand, description: translator.translateText('command_description_server')},
+            'command:whois':       {fn: whoisCommand, description: translator.translateText('command_description_whois'), aliases: ['w']},
+            'command:whowas':      {fn: whowasCommand, description: translator.translateText('command_description_whowas')},
+            'command:away':        {fn: awayCommand, description: translator.translateText('command_description_away')},
+            'command:encoding':    {fn: encodingCommand, description: translator.translateText('command_description_encoding')},
             'command:channel':     {fn: channelCommand, description: ''},
             'command:applet':      {fn: appletCommand, description: ''},
-            'command:settings':    {fn: settingsCommand, description: utils.translateText('command_description_settings')},
-            'command:script':      {fn: scriptCommand, description: utils.translateText('command_description_script')}
+            'command:settings':    {fn: settingsCommand, description: translator.translateText('command_description_settings')},
+            'command:script':      {fn: scriptCommand, description: translator.translateText('command_description_script')}
         };
 
 
         fn_to_bind['command:css'] = {
-            description: utils.translateText('command_description_css'),
-            fn: function(ev) {
+            description: translator.translateText('command_description_css'),
+            fn: function() {
                 this.app.view.reloadStyles();
             }
         };
 
 
         fn_to_bind['command:js'] = {
-            description: utils.translateText('command_description_js'),
+            description: translator.translateText('command_description_js'),
             fn: function(ev) {
-                if (!ev.params[0]) return;
+                if (!ev.params[0]) {
+                    return;
+                }
                 $script(ev.params[0] + '?' + (new Date().getTime()));
             }
         };
 
 
         fn_to_bind['command:set'] = {
-            description: utils.translateText('command_description_set'),
+            description: translator.translateText('command_description_set'),
             fn: function(ev) {
-                if (!ev.params[0]) return;
+                if (!ev.params[0]) {
+                    return;
+                }
 
                 var setting = ev.params[0],
                     value;
@@ -147,37 +146,40 @@ define('misc/clientuicommands', function(require, exports, module) {
                     value = ev.params.join(' ');
 
                     // If we're setting a true boolean value..
-                    if (value === 'true')
+                    if (value === 'true') {
                         value = true;
+                    }
 
                     // If we're setting a false boolean value..
-                    if (value === 'false')
+                    if (value === 'false') {
                         value = false;
+                    }
 
                     // If we're setting a number..
-                    if (parseInt(value, 10).toString() === value)
+                    if (parseInt(value, 10).toString() === value) {
                         value = parseInt(value, 10);
+                    }
 
-                    _kiwi.global.settings.set(setting, value);
+                    settings.set(setting, value);
                 }
 
                 // Read the value to the user
-                this.app.panels().active.addMsg('', utils.styleText('set_setting', {text: setting + ' = ' + _kiwi.global.settings.get(setting).toString()}));
+                this.app.panels().active.addMsg('', styleText('set_setting', {text: setting + ' = ' + settings.get(setting).toString()}));
             }
         };
 
 
         fn_to_bind['command:save'] = {
-            description: utils.translateText('command_description_save'),
-            fn: function(ev) {
-                _kiwi.global.settings.save();
-                this.app.panels().active.addMsg('', utils.styleText('settings_saved', {text: utils.translateText('client_models_application_settings_saved')}));
+            description: translator.translateText('command_description_save'),
+            fn: function() {
+                settings.save();
+                this.app.panels().active.addMsg('', styleText('settings_saved', {text: translator.translateText('client_models_application_settings_saved')}));
             }
         };
 
 
         fn_to_bind['command:alias'] = {
-            description: utils.translateText('command_description_alias'),
+            description: translator.translateText('command_description_alias'),
             fn: function(ev) {
                 var that = this,
                     name, rule;
@@ -185,7 +187,7 @@ define('misc/clientuicommands', function(require, exports, module) {
                 // No parameters passed so list them
                 if (!ev.params[1]) {
                     $.each(this.controlbox.preprocessor.aliases, function (name, rule) {
-                        that.app.panels().server.addMsg(' ', utils.styleText('list_aliases', {text: name + '   =>   ' + rule}));
+                        that.app.panels().server.addMsg(' ', styleText('list_aliases', {text: name + '   =>   ' + rule}));
                     });
                     return;
                 }
@@ -193,7 +195,9 @@ define('misc/clientuicommands', function(require, exports, module) {
                 // Deleting an alias?
                 if (ev.params[0] === 'del' || ev.params[0] === 'delete') {
                     name = ev.params[1];
-                    if (name[0] !== '/') name = '/' + name;
+                    if (name[0] !== '/') {
+                        name = '/' + name;
+                    }
                     delete this.controlbox.preprocessor.aliases[name];
                     return;
                 }
@@ -204,7 +208,9 @@ define('misc/clientuicommands', function(require, exports, module) {
                 rule = ev.params.join(' ');
 
                 // Make sure the name starts with a slash
-                if (name[0] !== '/') name = '/' + name;
+                if (name[0] !== '/') {
+                    name = '/' + name;
+                }
 
                 // Now actually add the alias
                 this.controlbox.preprocessor.aliases[name] = rule;
@@ -213,7 +219,7 @@ define('misc/clientuicommands', function(require, exports, module) {
 
 
         fn_to_bind['command:ignore'] = {
-            description: utils.translateText('command_description_ignore'),
+            description: translator.translateText('command_description_ignore'),
             fn: function(ev) {
                 var that = this,
                     ignore_list = this.app.connections.active_connection.ignore_list,
@@ -222,43 +228,43 @@ define('misc/clientuicommands', function(require, exports, module) {
                 // No parameters passed so list them
                 if (!ev.params[0]) {
                     if (ignore_list.length > 0) {
-                        this.app.panels().active.addMsg(' ', utils.styleText('ignore_title', {text: utils.translateText('client_models_application_ignore_title')}));
+                        this.app.panels().active.addMsg(' ', styleText('ignore_title', {text: translator.translateText('client_models_application_ignore_title')}));
                         ignore_list.forEach(function(ignored) {
-                            that.app.panels().active.addMsg(' ', utils.styleText('ignored_pattern', {text: ignored.get('mask')}));
+                            that.app.panels().active.addMsg(' ', styleText('ignored_pattern', {text: ignored.get('mask')}));
                         });
                     } else {
-                        this.app.panels().active.addMsg(' ', utils.styleText('ignore_none', {text: utils.translateText('client_models_application_ignore_none')}));
+                        this.app.panels().active.addMsg(' ', styleText('ignore_none', {text: translator.translateText('client_models_application_ignore_none')}));
                     }
                     return;
                 }
 
                 // We have a parameter, so add it, first convert it to a full mask.
-                user_mask = utils.toUserMask(ev.params[0]);
+                user_mask = toUserMask(ev.params[0]);
                 ignore_list.addMask(user_mask);
 
-                this.app.panels().active.addMsg(' ', utils.styleText('ignore_nick', {text: utils.translateText('client_models_application_ignore_nick', [user_mask])}));
+                this.app.panels().active.addMsg(' ', styleText('ignore_nick', {text: translator.translateText('client_models_application_ignore_nick', [user_mask])}));
             }
         };
 
 
         fn_to_bind['command:unignore'] = {
-            description: utils.translateText('command_description_unignore'),
+            description: translator.translateText('command_description_unignore'),
             fn: function(ev) {
                 var ignore_list = this.app.connections.active_connection.ignore_list,
                     user_mask, matches;
 
                 if (!ev.params[0]) {
-                    this.app.panels().active.addMsg(' ', utils.styleText('ignore_stop_notice', {text: utils.translateText('client_models_application_ignore_stop_notice')}));
+                    this.app.panels().active.addMsg(' ', styleText('ignore_stop_notice', {text: translator.translateText('client_models_application_ignore_stop_notice')}));
                     return;
                 }
 
-                user_mask = utils.toUserMask(ev.params[0]);
+                user_mask = toUserMask(ev.params[0]);
                 matches = ignore_list.where({mask: user_mask});
                 if (matches) {
                     ignore_list.remove(matches);
                 }
 
-                this.app.panels().active.addMsg(' ', utils.styleText('ignore_stopped', {text: utils.translateText('client_models_application_ignore_stopped', [user_mask])}));
+                this.app.panels().active.addMsg(' ', styleText('ignore_stopped', {text: translator.translateText('client_models_application_ignore_stopped', [user_mask])}));
             }
         };
 
@@ -278,7 +284,7 @@ define('misc/clientuicommands', function(require, exports, module) {
     }
 
 
-    function allCommands (ev) {}
+    function allCommands () {}
 
 
     function joinCommand (ev) {
@@ -288,8 +294,9 @@ define('misc/clientuicommands', function(require, exports, module) {
         panels = this.app.connections.active_connection.createAndJoinChannels(channel_names);
 
         // Show the last channel if we have one
-        if (panels.length)
+        if (panels.length) {
             panels[panels.length - 1].view.show();
+        }
     }
 
 
@@ -304,15 +311,17 @@ define('misc/clientuicommands', function(require, exports, module) {
         // Check if we have the panel already. If not, create it
         panel = this.app.connections.active_connection.panels.getByName(destination);
         if (!panel) {
-            panel = new (require('ui/panels/query'))({name: destination, network: this.app.connections.active_connection});
+            panel = new QueryPanel({name: destination, network: this.app.connections.active_connection});
             this.app.connections.active_connection.panels.add(panel);
         }
 
-        if (panel) panel.view.show();
+        if (panel) {
+            panel.view.show();
+        }
 
         if (message) {
             this.app.connections.active_connection.gateway.msg(panel.get('name'), message);
-            panel.addMsg(this.app.connections.active_connection.get('nick'), utils.styleText('privmsg', {text: message}), 'privmsg');
+            panel.addMsg(this.app.connections.active_connection.get('nick'), styleText('privmsg', {text: message}), 'privmsg');
         }
 
     }
@@ -326,7 +335,7 @@ define('misc/clientuicommands', function(require, exports, module) {
         ev.params.shift();
         message = ev.params.join(' ');
 
-        panel.addMsg(this.app.connections.active_connection.get('nick'), utils.styleText('privmsg', {text: message}), 'privmsg');
+        panel.addMsg(this.app.connections.active_connection.get('nick'), styleText('privmsg', {text: message}), 'privmsg');
         this.app.connections.active_connection.gateway.msg(destination, message);
     }
 
@@ -337,7 +346,7 @@ define('misc/clientuicommands', function(require, exports, module) {
         }
 
         var panel = this.app.panels().active;
-        panel.addMsg('', utils.styleText('action', {nick: this.app.connections.active_connection.get('nick'), text: ev.params.join(' ')}), 'action');
+        panel.addMsg('', styleText('action', {nick: this.app.connections.active_connection.get('nick'), text: ev.params.join(' ')}), 'action');
         this.app.connections.active_connection.gateway.action(panel.get('name'), ev.params.join(' '));
     }
 
@@ -387,7 +396,9 @@ define('misc/clientuicommands', function(require, exports, module) {
     function topicCommand (ev) {
         var channel_name;
 
-        if (ev.params.length === 0) return;
+        if (ev.params.length === 0) {
+            return;
+        }
 
         if (this.app.connections.active_connection.isChannelName(ev.params[0])) {
             channel_name = ev.params[0];
@@ -404,7 +415,9 @@ define('misc/clientuicommands', function(require, exports, module) {
         var destination;
 
         // Make sure we have a destination and some sort of message
-        if (ev.params.length <= 1) return;
+        if (ev.params.length <= 1) {
+            return;
+        }
 
         destination = ev.params[0];
         ev.params.shift();
@@ -422,10 +435,14 @@ define('misc/clientuicommands', function(require, exports, module) {
     function kickCommand (ev) {
         var nick, panel = this.app.panels().active;
 
-        if (!panel.isChannel()) return;
+        if (!panel.isChannel()) {
+            return;
+        }
 
         // Make sure we have a nick
-        if (ev.params.length === 0) return;
+        if (ev.params.length === 0) {
+            return;
+        }
 
         nick = ev.params[0];
         ev.params.shift();
@@ -437,7 +454,9 @@ define('misc/clientuicommands', function(require, exports, module) {
     function namesCommand (ev) {
         var channel, panel = this.app.panels().active;
 
-        if (!panel.isChannel()) return;
+        if (!panel.isChannel()) {
+            return;
+        }
 
         // Make sure we have a channel
         channel = ev.params.length === 0 ?
@@ -491,7 +510,9 @@ define('misc/clientuicommands', function(require, exports, module) {
                         return res;
                     }, {'+':[], '-':[]})
                     .reduce(function(res, modes, type) {
-                        if (modes.length > 0) res += type + modes.join('') + ' ';
+                        if (modes.length > 0) {
+                            res += type + modes.join('') + ' ';
+                        }
                         return res;
                     }, '')
                     .value();
@@ -504,7 +525,7 @@ define('misc/clientuicommands', function(require, exports, module) {
     }
 
 
-    function clearCommand (ev) {
+    function clearCommand () {
         // Can't clear a server or applet panel
         if (this.app.panels().active.isServer() || this.app.panels().active.isApplet()) {
             return;
@@ -520,7 +541,9 @@ define('misc/clientuicommands', function(require, exports, module) {
         var target, type;
 
         // Make sure we have a target and a ctcp type (eg. version, time)
-        if (ev.params.length < 2) return;
+        if (ev.params.length < 2) {
+            return;
+        }
 
         target = ev.params[0];
         ev.params.shift();
@@ -532,23 +555,25 @@ define('misc/clientuicommands', function(require, exports, module) {
     }
 
 
-    function settingsCommand (ev) {
-        var settings = require('ui/panels/applet').loadOnce('kiwi_settings');
+    function settingsCommand () {
+        var settings = AppletPanel.loadOnce('kiwi_settings');
         settings.view.show();
     }
 
 
-    function scriptCommand (ev) {
-        var editor = require('ui/panels/applet').loadOnce('kiwi_script_editor');
+    function scriptCommand () {
+        var editor = AppletPanel.loadOnce('kiwi_script_editor');
         editor.view.show();
     }
 
 
     function appletCommand (ev) {
-        if (!ev.params[0]) return;
+        if (!ev.params[0]) {
+            return;
+        }
 
-        var Applet = require('ui/panels/applet');
-        var panel = new (require('ui/panels/applet'))();
+        var Applet = AppletPanel;
+        var panel = new AppletPanel();
 
         if (ev.params[1]) {
             // Url and name given
@@ -557,7 +582,7 @@ define('misc/clientuicommands', function(require, exports, module) {
             // Load a pre-loaded applet
             panel = Applet.loadOnce(ev.params[0]);
             if (!panel) {
-                this.app.panels().server.addMsg('', utils.styleText('applet_notfound', {text: utils.translateText('client_models_application_applet_notfound', [ev.params[0]])}));
+                this.app.panels().server.addMsg('', styleText('applet_notfound', {text: translator.translateText('client_models_application_applet_notfound', [ev.params[0]])}));
                 return;
             }
         }
@@ -570,19 +595,21 @@ define('misc/clientuicommands', function(require, exports, module) {
         var nick, channel;
 
         // A nick must be specified
-        if (!ev.params[0])
+        if (!ev.params[0]) {
             return;
+        }
 
         // Can only invite into channels
-        if (!this.app.panels().active.isChannel())
+        if (!this.app.panels().active.isChannel()) {
             return;
+        }
 
         nick = ev.params[0];
         channel = this.app.panels().active.get('name');
 
         this.app.connections.active_connection.gateway.raw('INVITE ' + nick + ' ' + channel);
 
-        this.app.panels().active.addMsg('', utils.styleText('channel_has_been_invited', {nick: nick, text: utils.translateText('client_models_application_has_been_invited', [channel])}), 'action');
+        this.app.panels().active.addMsg('', styleText('channel_has_been_invited', {nick: nick, text: translator.translateText('client_models_application_has_been_invited', [channel])}), 'action');
     }
 
 
@@ -595,8 +622,9 @@ define('misc/clientuicommands', function(require, exports, module) {
             nick = this.app.panels().active.get('name');
         }
 
-        if (nick)
+        if (nick) {
             this.app.connections.active_connection.gateway.raw('WHOIS ' + nick + ' ' + nick);
+        }
     }
 
 
@@ -609,8 +637,9 @@ define('misc/clientuicommands', function(require, exports, module) {
             nick = this.app.panels().active.get('name');
         }
 
-        if (nick)
+        if (nick) {
             this.app.connections.active_connection.gateway.raw('WHOWAS ' + nick);
+        }
     }
 
 
@@ -623,35 +652,37 @@ define('misc/clientuicommands', function(require, exports, module) {
         var that = this;
 
         if (ev.params[0]) {
-            _kiwi.gateway.setEncoding(null, ev.params[0], function (success) {
+            Gateway.instance().setEncoding(null, ev.params[0], function (success) {
                 if (success) {
-                    that.app.panels().active.addMsg('', utils.styleText('encoding_changed', {text: utils.translateText('client_models_application_encoding_changed', [ev.params[0]])}));
+                    that.app.panels().active.addMsg('', styleText('encoding_changed', {text: translator.translateText('client_models_application_encoding_changed', [ev.params[0]])}));
                 } else {
-                    that.app.panels().active.addMsg('', utils.styleText('encoding_invalid', {text: utils.translateText('client_models_application_encoding_invalid', [ev.params[0]])}));
+                    that.app.panels().active.addMsg('', styleText('encoding_invalid', {text: translator.translateText('client_models_application_encoding_invalid', [ev.params[0]])}));
                 }
             });
         } else {
-            this.app.panels().active.addMsg('', utils.styleText('client_models_application_encoding_notspecified', {text: utils.translateText('client_models_application_encoding_notspecified')}));
-            this.app.panels().active.addMsg('', utils.styleText('client_models_application_encoding_usage', {text: utils.translateText('client_models_application_encoding_usage')}));
+            this.app.panels().active.addMsg('', styleText('client_models_application_encoding_notspecified', {text: translator.translateText('client_models_application_encoding_notspecified')}));
+            this.app.panels().active.addMsg('', styleText('client_models_application_encoding_usage', {text: translator.translateText('client_models_application_encoding_usage')}));
         }
     }
 
 
-    function channelCommand (ev) {
+    function channelCommand () {
         var active_panel = this.app.panels().active;
 
-        if (!active_panel.isChannel())
+        if (!active_panel.isChannel()) {
             return;
+        }
 
-        new (require('ui/channelinfo/'))({channel: this.app.panels().active});
+        return new ChannelInfo({channel: this.app.panels().active});
     }
 
 
     function quitCommand (ev) {
         var network = this.app.connections.active_connection;
 
-        if (!network)
+        if (!network) {
             return;
+        }
 
         network.gateway.quit(ev.params.join(' '));
     }
@@ -664,8 +695,8 @@ define('misc/clientuicommands', function(require, exports, module) {
 
         // If no server address given, show the new connection dialog
         if (!ev.params[0]) {
-            tmp = new (require('ui/menubox/'))(utils.translateText('client_models_application_connection_create'));
-            tmp.addItem('new_connection', new (require('ui/newconnection/'))().view.$el);
+            tmp = new MenuBox(translator.translateText('client_models_application_connection_create'));
+            tmp.addItem('new_connection', new NewConnection().view.$el);
             tmp.show();
 
             // Center screen the dialog
@@ -707,22 +738,23 @@ define('misc/clientuicommands', function(require, exports, module) {
         // Use the same nick as we currently have
         nick = this.app.connections.active_connection.get('nick');
 
-        this.app.panels().active.addMsg('', utils.styleText('server_connecting', {text: utils.translateText('client_models_application_connection_connecting', [server, port.toString()])}));
+        this.app.panels().active.addMsg('', styleText('server_connecting', {text: translator.translateText('client_models_application_connection_connecting', [server, port.toString()])}));
 
-        _kiwi.gateway.newConnection({
+        Gateway.instance().newConnection({
             nick: nick,
             host: server,
             port: port,
             ssl: ssl,
             password: password
-        }, function(err, new_connection) {
+        }, function(err) {
             var translated_err;
 
             if (err) {
-                translated_err = utils.translateText('client_models_application_connection_error', [server, port.toString(), err.toString()]);
-                that.app.panels().active.addMsg('', utils.styleText('server_connecting_error', {text: translated_err}));
+                translated_err = translator.translateText('client_models_application_connection_error', [server, port.toString(), err.toString()]);
+                that.app.panels().active.addMsg('', styleText('server_connecting_error', {text: translated_err}));
             }
         });
     }
 
+    return ClientUiCommands;
 });

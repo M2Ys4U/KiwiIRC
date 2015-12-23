@@ -1,11 +1,8 @@
-define('misc/ignorelist', function(require, exports, module) {
-
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.Collection.extend({
+define('misc/ignorelist', ['lib/backbone', 'helpers/tousermask', 'misc/datastore'], function (Backbone, toUserMask, DataStore) {
+    return Backbone.Collection.extend({
         initialize: function() {
             this.network_address = '';
-            this.ignore_data = require('misc/datastore').instance('kiwi.ignore_list');
+            this.ignore_data = DataStore.instance('kiwi.ignore_list');
             this.ignore_data.load();
 
             this.on('add', _.bind(this.onAdd, this));
@@ -15,14 +12,16 @@ define('misc/ignorelist', function(require, exports, module) {
 
 
         onAdd: function(entry) {
-            if (!entry.get('mask')) return;
+            if (!entry.get('mask')) {
+                return;
+            }
 
             if (!entry.get('time')) {
                 entry.set('time', (new Date()).getTime());
             }
 
             if (!entry.get('regex')) {
-                entry.set('regex', utils.toUserMask(entry.get('mask'), true)[1]);
+                entry.set('regex', toUserMask(entry.get('mask'), true)[1]);
             }
         },
 
@@ -32,11 +31,13 @@ define('misc/ignorelist', function(require, exports, module) {
 
             var ignore_list = this.ignore_data.get(this.network_address) || [];
 
-            _.each(ignore_list, function(item, idx) {
-                if (!item || !item.mask) return;
+            _.each(ignore_list, function(item) {
+                if (!item || !item.mask) {
+                    return;
+                }
 
                 // Make the regex for the given user mask
-                item.regex = utils.toUserMask(item.mask, true)[1];
+                item.regex = toUserMask(item.mask, true)[1];
             });
 
             this.reset(ignore_list);
@@ -64,7 +65,7 @@ define('misc/ignorelist', function(require, exports, module) {
 
         removeMask: function(mask) {
             var entry = this.find(function(entry) {
-                return entry.get('mask') == mask;
+                return entry.get('mask') === mask;
             });
 
             if (entry) {

@@ -1,8 +1,5 @@
-define('ui/resizehandler/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/resizehandler', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         events: {
             'mousedown': 'startDrag',
             'mouseup': 'stopDrag'
@@ -15,16 +12,18 @@ define('ui/resizehandler/', function(require, exports, module) {
             $(window).on('mousemove', $.proxy(this.onDrag, this));
         },
 
-        startDrag: function (event) {
+        startDrag: function () {
             this.dragging = true;
         },
 
-        stopDrag: function (event) {
+        stopDrag: function () {
             this.dragging = false;
         },
 
         onDrag: function (event) {
-            if (!this.dragging) return;
+            if (!this.dragging) {
+                return;
+            }
 
             var offset = $('#kiwi').offset().left;
 

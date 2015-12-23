@@ -1,9 +1,5 @@
-define('ui/paneltabs/tabs', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/paneltabs/tabs', ['lib/backbone', 'ui/application', 'helpers/translator'], function (Backbone, Application, translator) {
+    return Backbone.View.extend({
         tagName: 'ul',
         className: 'panellist',
 
@@ -53,13 +49,15 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
             // Go through each panel adding its tab
             this.model.forEach(function (panel) {
                 // If this is the server panel, ignore as it's already added
-                if (this.is_network && panel == that.model.server)
+                if (this.is_network && panel === that.model.server) {
                     return;
+                }
 
                 panel.tab.data('panel', panel);
 
-                if (this.is_network)
+                if (this.is_network) {
                     panel.tab.data('connection_id', this.model.network.get('connection_id'));
+                }
 
                 panel.tab.appendTo(that.$el);
             });
@@ -84,8 +82,9 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
 
             panel.tab.data('panel', panel);
 
-            if (this.is_network)
+            if (this.is_network) {
                 panel.tab.data('connection_id', this.model.network.get('connection_id'));
+            }
 
             this.sortTabs();
 
@@ -95,8 +94,6 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
             Application.instance().view.doLayout();
         },
         panelRemoved: function (panel) {
-            var connection = Application.instance().connections.active_connection;
-
             panel.tab.remove();
             delete panel.tab;
 
@@ -105,7 +102,7 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
             Application.instance().view.doLayout();
         },
 
-        panelActive: function (panel, previously_active_panel) {
+        panelActive: function (panel) {
             // Remove any existing tabs or part images
             Application.instance().view.$el.find('.panellist .part').remove();
             Application.instance().view.$el.find('.panellist .active').removeClass('active');
@@ -131,7 +128,9 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
             var tab = $(e.currentTarget).parent();
             var panel = tab.data('panel');
 
-            if (!panel) return;
+            if (!panel) {
+                return;
+            }
 
             // If the nicklist is empty, we haven't joined the channel as yet
             // If we part a server, then we need to disconnect from server, close channel tabs,
@@ -140,7 +139,7 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
                 this.model.network.gateway.part(panel.get('name'));
 
             } else if(panel.isServer()) {
-                if (!this.model.network.get('connected') || confirm(utils.translateText('disconnect_from_server'))) {
+                if (!this.model.network.get('connected') || confirm(translator.translateText('disconnect_from_server'))) {
                     this.model.network.gateway.quit("Leaving");
                     Application.instance().connections.remove(this.model.network);
                     Application.instance().startup_applet.view.show();
@@ -157,8 +156,9 @@ define('ui/paneltabs/tabs', function(require, exports, module) {
 
             this.model.forEach(function (panel) {
                 // Ignore the server tab, so all others get added after it
-                if (that.is_network && panel == that.model.server)
+                if (that.is_network && panel === that.model.server) {
                     return;
+                }
 
                 panels.push([panel.get('title') || panel.get('name'), panel]);
             });

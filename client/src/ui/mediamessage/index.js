@@ -1,8 +1,5 @@
-define('ui/mediamessage/', function(require, exports, module) {
-
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/mediamessage', ['lib/backbone', 'helpers/translator'], function (Backbone, translator) {
+    return Backbone.View.extend({
         events: {
             'click .media-close': 'close'
         },
@@ -32,8 +29,8 @@ define('ui/mediamessage/', function(require, exports, module) {
         open: function () {
             // Create the content div if we haven't already
             if (!this.$content) {
-                this.$content = $('<div class="media-content"><a class="media-close"><i class="fa fa-chevron-up"></i> ' + utils.translateText('client_views_mediamessage_close') + '</a><br /><div class="content"></div></div>');
-                this.$content.find('.content').append(this.mediaTypes[this.$el.data('type')].apply(this, []) || utils.translateText('client_views_mediamessage_notfound') + ' :(');
+                this.$content = $('<div class="media-content"><a class="media-close"><i class="fa fa-chevron-up"></i> ' + translator.translateText('client_views_mediamessage_close') + '</a><br /><div class="content"></div></div>');
+                this.$content.find('.content').append(this.mediaTypes[this.$el.data('type')].apply(this, []) || translator.translateText('client_views_mediamessage_notfound') + ' :(');
             }
 
             // Now show the content if not already
@@ -59,7 +56,7 @@ define('ui/mediamessage/', function(require, exports, module) {
                     that.$content.find('.content').html(data.html);
                 });
 
-                return $('<div>' + utils.translateText('client_views_mediamessage_load_tweet') + '...</div>');
+                return $('<div>' + translator.translateText('client_views_mediamessage_load_tweet') + '...</div>');
             },
 
 
@@ -77,7 +74,7 @@ define('ui/mediamessage/', function(require, exports, module) {
                     that.$content.find('.content').html('<i class="fa fa-exclamation-triangle"></i> No content.');
                 });
 
-                return $('<div>' + utils.translateText('client_views_mediamessage_load_image') + '...</div>');
+                return $('<div>' + translator.translateText('client_views_mediamessage_load_image') + '...</div>');
             },
 
 
@@ -114,7 +111,7 @@ define('ui/mediamessage/', function(require, exports, module) {
                     that.$content.find('.content').html(_.template(tmpl)(post));
                 });
 
-                return $('<div>' + utils.translateText('client_views_mediamessage_load_reddit') + '...</div>');
+                return $('<div>' + translator.translateText('client_views_mediamessage_load_reddit') + '...</div>');
             },
 
 
@@ -137,7 +134,7 @@ define('ui/mediamessage/', function(require, exports, module) {
                     that.$content.find('.content').html(data.div);
                 });
 
-                return $('<div>' + utils.translateText('client_views_mediamessage_load_gist') + '...</div>');
+                return $('<div>' + translator.translateText('client_views_mediamessage_load_gist') + '...</div>');
             },
 
             spotify: function () {
@@ -170,7 +167,7 @@ define('ui/mediamessage/', function(require, exports, module) {
 
             soundcloud: function () {
                 var url = this.$el.data('url'),
-                    $content = $('<div></div>').text(utils.translateText('client_models_applet_loading'));
+                    $content = $('<div></div>').text(translator.translateText('client_models_applet_loading'));
 
                 $.getJSON('https://soundcloud.com/oembed', { url: url })
                     .then(function (data) {
@@ -178,7 +175,7 @@ define('ui/mediamessage/', function(require, exports, module) {
                             $(data.html).attr('height', data.height - 100)
                         );
                     }, function () {
-                        $content.text(utils.translateText('client_views_mediamessage_notfound'));
+                        $content.text(translator.translateText('client_views_mediamessage_notfound'));
                     });
 
                 return $content;
@@ -187,8 +184,9 @@ define('ui/mediamessage/', function(require, exports, module) {
             custom: function() {
                 var type = this.constructor.types[this.$el.data('index')];
 
-                if (!type)
+                if (!type) {
                     return;
+                }
 
                 return $(type.buildHtml(this.$el.data('url')));
             }
@@ -202,8 +200,9 @@ define('ui/mediamessage/', function(require, exports, module) {
          * buildHtml() should return the HTML string to be used within the drop down
          */
         addType: function(match, buildHtml) {
-            if (typeof match !== 'function' || typeof buildHtml !== 'function')
+            if (typeof match !== 'function' || typeof buildHtml !== 'function') {
                 return;
+            }
 
             this.types = this.types || [];
             this.types.push({match: match, buildHtml: buildHtml});
@@ -215,8 +214,9 @@ define('ui/mediamessage/', function(require, exports, module) {
             var html = '', matches;
 
             _.each(this.types || [], function(type, type_idx) {
-                if (!type.match(url))
+                if (!type.match(url)) {
                     return;
+                }
 
                 // Add which media type should handle this media message. Will be read when it's clicked on
                 html += '<span class="media" title="Open" data-type="custom" data-index="'+type_idx+'" data-url="' + _.escape(url) + '"><a class="open"><i class="fa fa-chevron-right"></i></a></span>';
@@ -275,3 +275,4 @@ define('ui/mediamessage/', function(require, exports, module) {
         }
     });
 });
+

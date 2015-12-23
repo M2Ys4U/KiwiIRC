@@ -1,9 +1,5 @@
-define('misc/network', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.Model.extend({
+define('misc/network', ['lib/lodash', 'lib/backbone', 'ui/application', 'helpers/translator', 'helpers/tousermask', 'helpers/secondstotime', 'helpers/styletext', 'ui/paneltabs', 'ui/panels/server', 'misc/ignorelist', 'ui/panels/channel', 'ui/panels/query', 'ui/members/member', 'helpers/formatdate', 'ui/panels/applet', 'ui/nickchange', 'helpers/settings', 'helpers/events', 'components', 'misc/gateway'], function (_, Backbone, Application, translator, toUserMask, secondsToTime, styleText, PanelTabs, ServerPanel, IgnoreList, ChannelPanel, QueryPanel, Member, formatDate, AppletPanel, NickChangeBox, settings, events, components, Gateway) {
+    return Backbone.Model.extend({
         defaults: {
             connection_id: 0,
             /**
@@ -65,20 +61,20 @@ define('misc/network', function(require, exports, module) {
         initialize: function () {
             // If we already have a connection, bind our events
             if (typeof this.get('connection_id') !== 'undefined') {
-                this.gateway = _kiwi.global.components.Network(this.get('connection_id'));
+                this.gateway = components.Network(this.get('connection_id'));
                 this.bindGatewayEvents();
             }
 
             // Create our panel list (tabs)
-            this.panels = new (require('ui/paneltabs/'))([], this);
+            this.panels = new PanelTabs([], this);
             //this.panels.network = this;
 
             // Automatically create a server tab
-            var server_panel = new (require('ui/panels/server'))({name: 'Server', network: this});
+            var server_panel = new ServerPanel({name: 'Server', network: this});
             this.panels.add(server_panel);
             this.panels.server = this.panels.active = server_panel;
 
-            this.ignore_list = new (require('misc/ignorelist'))();
+            this.ignore_list = new IgnoreList();
         },
 
 
@@ -92,12 +88,12 @@ define('misc/network', function(require, exports, module) {
                     password:   this.get('password')
                 };
 
-            _kiwi.gateway.makeIrcConnection(server_info, function(err, connection_id) {
+            Gateway.instance().makeIrcConnection(server_info, function(err, connection_id) {
                 if (!err) {
                     that.gateway.dispose();
 
                     that.set('connection_id', connection_id);
-                    that.gateway = _kiwi.global.components.Network(that.get('connection_id'));
+                    that.gateway = components.Network(that.get('connection_id'));
                     that.bindGatewayEvents();
 
                     // Reset each of the panels connection ID
@@ -105,11 +101,11 @@ define('misc/network', function(require, exports, module) {
                         panel.set('connection_id', connection_id);
                     });
 
-                    callback_fn && callback_fn(err);
+                    callback_fn && callback_fn(err); //jshint ignore:line
 
                 } else {
-                    console.log("_kiwi.gateway.socket.on('error')", {reason: err});
-                    callback_fn && callback_fn(err);
+                    console.log("Gateway.socket.on('error')", {reason: err});
+                    callback_fn && callback_fn(err); //jshint ignore:line
                 }
             });
         },
@@ -169,6 +165,8 @@ define('misc/network', function(require, exports, module) {
             }
 
             $.each(channels, function (index, channel_name_key) {
+                var channel;
+
                 // We may have a channel key so split it off
                 var spli = channel_name_key.trim().split(' '),
                     channel_name = spli[0],
@@ -186,7 +184,7 @@ define('misc/network', function(require, exports, module) {
                 // Check if we have the panel already. If not, create it
                 channel = that.panels.getByName(channel_name);
                 if (!channel) {
-                    channel = new (require('ui/panels/channel'))({name: channel_name, network: that, key: channel_key||undefined});
+                    channel = new ChannelPanel({name: channel_name, network: that, key: channel_key||undefined});
                     that.panels.add(channel);
                 }
 
@@ -208,8 +206,9 @@ define('misc/network', function(require, exports, module) {
             var that = this;
 
             this.panels.forEach(function(panel) {
-                if (!panel.isChannel())
+                if (!panel.isChannel()) {
                     return;
+                }
 
                 that.gateway.join(panel.get('name'), panel.get('key') || undefined);
             });
@@ -218,7 +217,9 @@ define('misc/network', function(require, exports, module) {
         isChannelName: function (channel_name) {
             var channel_prefix = this.get('channel_prefix');
 
-            if (!channel_name || !channel_name.length) return false;
+            if (!channel_name || !channel_name.length) {
+                return false;
+            }
             return (channel_prefix.indexOf(channel_name[0]) > -1);
         },
 
@@ -230,7 +231,7 @@ define('misc/network', function(require, exports, module) {
             if (typeof mask === "object") {
                mask = (mask.nick||'*')+'!'+(mask.ident||'*')+'@'+(mask.hostname||'*');
             } else if (typeof mask === "string") {
-               mask = utils.toUserMask(mask);
+               mask = toUserMask(mask);
             }
 
             found_mask = this.ignore_list.find(function(entry) {
@@ -248,7 +249,7 @@ define('misc/network', function(require, exports, module) {
             // Check if we have the panel already. If not, create it
             query = that.panels.getByName(nick);
             if (!query) {
-                query = new (require('ui/panels/query'))({name: nick, network: this});
+                query = new QueryPanel({name: nick, network: this});
                 that.panels.add(query);
             }
 
@@ -261,12 +262,12 @@ define('misc/network', function(require, exports, module) {
 
 
 
-    function onDisconnect(event) {
+    function onDisconnect() {
         this.set('connected', false);
 
         $.each(this.panels.models, function (index, panel) {
             if (!panel.isApplet()) {
-                panel.addMsg('', utils.styleText('network_disconnected', {text: utils.translateText('client_models_network_disconnected', [])}), 'action quit');
+                panel.addMsg('', styleText('network_disconnected', {text: translator.translateText('client_models_network_disconnected', [])}), 'action quit');
             }
         });
     }
@@ -274,7 +275,7 @@ define('misc/network', function(require, exports, module) {
 
 
     function onConnect(event) {
-        var panels, channel_names;
+        var panels;
 
         // Update our nick with what the network gave us
         this.set('nick', event.nick);
@@ -291,8 +292,9 @@ define('misc/network', function(require, exports, module) {
             panels = this.createAndJoinChannels(this.auto_join.channel + ' ' + (this.auto_join.key || ''));
 
             // Show the last channel if we have one
-            if (panels)
+            if (panels) {
                 panels[panels.length - 1].view.show();
+            }
 
             delete this.auto_join;
         }
@@ -332,7 +334,7 @@ define('misc/network', function(require, exports, module) {
 
 
     function onMotd(event) {
-        this.panels.server.addMsg(this.get('name'), utils.styleText('motd', {text: event.msg}), 'motd');
+        this.panels.server.addMsg(this.get('name'), styleText('motd', {text: event.msg}), 'motd');
     }
 
 
@@ -341,26 +343,28 @@ define('misc/network', function(require, exports, module) {
         var c, members, user;
         c = this.panels.getByName(event.channel);
         if (!c) {
-            c = new (require('ui/panels/channel'))({name: event.channel, network: this});
+            c = new ChannelPanel({name: event.channel, network: this});
             this.panels.add(c);
         }
 
         members = c.get('members');
-        if (!members) return;
+        if (!members) {
+            return;
+        }
 
         // Do we already have this member?
         if (members.getByNick(event.nick)) {
             return;
         }
 
-        user = new (require('ui/members/member'))({
+        user = new Member({
             nick: event.nick,
             ident: event.ident,
             hostname: event.hostname,
             user_prefixes: this.get('user_prefixes')
         });
 
-        _kiwi.global.events.emit('channel:join', {channel: event.channel, user: user, network: this.gateway})
+        events.emit('channel:join', {channel: event.channel, user: user, network: this.gateway})
         .then(function() {
             members.add(user, {kiwi: event});
         });
@@ -377,7 +381,9 @@ define('misc/network', function(require, exports, module) {
         part_options.time = event.time;
 
         channel = this.panels.getByName(event.channel);
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
         // If this is us, close the panel
         if (event.nick === this.get('nick')) {
@@ -386,12 +392,16 @@ define('misc/network', function(require, exports, module) {
         }
 
         members = channel.get('members');
-        if (!members) return;
+        if (!members) {
+            return;
+        }
 
         user = members.getByNick(event.nick);
-        if (!user) return;
+        if (!user) {
+            return;
+        }
 
-        _kiwi.global.events.emit('channel:leave', {channel: event.channel, user: user, type: 'part', message: part_options.message, network: this.gateway})
+        events.emit('channel:leave', {channel: event.channel, user: user, type: 'part', message: part_options.message, network: this.gateway})
         .then(function() {
             members.remove(user, {kiwi: part_options});
         });
@@ -400,7 +410,7 @@ define('misc/network', function(require, exports, module) {
 
 
     function onQuit(event) {
-        var member, members,
+        var member,
             quit_options = {};
 
         quit_options.type = 'quit';
@@ -410,9 +420,9 @@ define('misc/network', function(require, exports, module) {
         $.each(this.panels.models, function (index, panel) {
             // Let any query panels know they quit
             if (panel.isQuery() && panel.get('name').toLowerCase() === event.nick.toLowerCase()) {
-                panel.addMsg(' ', utils.styleText('channel_quit', {
+                panel.addMsg(' ', styleText('channel_quit', {
                     nick: event.nick,
-                    text: utils.translateText('client_models_channel_quit', [quit_options.message])
+                    text: translator.translateText('client_models_channel_quit', [quit_options.message])
                 }), 'action quit', {time: quit_options.time});
             }
 
@@ -420,7 +430,7 @@ define('misc/network', function(require, exports, module) {
             if (panel.isChannel()) {
                 member = panel.get('members').getByNick(event.nick);
                 if (member) {
-                    _kiwi.global.events.emit('channel:leave', {channel: panel.get('name'), user: member, type: 'quit', message: quit_options.message, network: this.gateway})
+                    events.emit('channel:leave', {channel: panel.get('name'), user: member, type: 'quit', message: quit_options.message, network: this.gateway})
                     .then(function() {
                         panel.get('members').remove(member, {kiwi: quit_options});
                     });
@@ -438,21 +448,27 @@ define('misc/network', function(require, exports, module) {
         part_options.type = 'kick';
         part_options.by = event.nick;
         part_options.message = event.message || '';
-        part_options.current_user_kicked = (event.kicked == this.get('nick'));
-        part_options.current_user_initiated = (event.nick == this.get('nick'));
+        part_options.current_user_kicked = (event.kicked === this.get('nick'));
+        part_options.current_user_initiated = (event.nick === this.get('nick'));
         part_options.time = event.time;
 
         channel = this.panels.getByName(event.channel);
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
         members = channel.get('members');
-        if (!members) return;
+        if (!members) {
+            return;
+        }
 
         user = members.getByNick(event.kicked);
-        if (!user) return;
+        if (!user) {
+            return;
+        }
 
 
-        _kiwi.global.events.emit('channel:leave', {channel: event.channel, user: user, type: 'kick', message: part_options.message, network: this.gateway})
+        events.emit('channel:leave', {channel: event.channel, user: user, type: 'kick', message: part_options.message, network: this.gateway})
         .then(function() {
             members.remove(user, {kiwi: part_options});
 
@@ -465,17 +481,17 @@ define('misc/network', function(require, exports, module) {
 
 
     function onMessage(event) {
-        _kiwi.global.events.emit('message:new', {network: this.gateway, message: event})
+        events.emit('message:new', {network: this.gateway, message: event})
         .then(_.bind(function() {
-            var panel,
-                is_pm = ((event.target || '').toLowerCase() == this.get('nick').toLowerCase());
+            var panel, channel_name, active_panel,
+                is_pm = ((event.target || '').toLowerCase() === this.get('nick').toLowerCase());
 
             // An ignored user? don't do anything with it
             if (this.isUserIgnored(event)) {
                 return;
             }
 
-            if (event.type == 'notice') {
+            if (event.type === 'notice') {
                 if (event.from_server) {
                     panel = this.panels.server;
 
@@ -483,7 +499,7 @@ define('misc/network', function(require, exports, module) {
                     panel = this.panels.getByName(event.target) || this.panels.getByName(event.nick);
 
                     // Forward ChanServ messages to its associated channel
-                    if (event.nick && event.nick.toLowerCase() == 'chanserv' && event.msg.charAt(0) == '[') {
+                    if (event.nick && event.nick.toLowerCase() === 'chanserv' && event.msg.charAt(0) === '[') {
                         channel_name = /\[([^ \]]+)\]/gi.exec(event.msg);
                         if (channel_name && channel_name[1]) {
                             channel_name = channel_name[1];
@@ -501,8 +517,8 @@ define('misc/network', function(require, exports, module) {
             } else if (is_pm) {
                 // If a panel isn't found for this PM and we allow new queries, create one
                 panel = this.panels.getByName(event.nick);
-                if (!panel && !_kiwi.global.settings.get('ignore_new_queries')) {
-                    panel = new (require('ui/panels/query'))({name: event.nick, network: this});
+                if (!panel && !settings.get('ignore_new_queries')) {
+                    panel = new QueryPanel({name: event.nick, network: this});
                     this.panels.add(panel);
                 } else if(!panel) {
                     // We have not allowed new queries and we have not opened the panel ourselves, don't process the message
@@ -520,22 +536,23 @@ define('misc/network', function(require, exports, module) {
 
             switch (event.type){
             case 'message':
-                panel.addMsg(event.nick, utils.styleText('privmsg', {text: event.msg}), 'privmsg', {time: event.time});
+                panel.addMsg(event.nick, styleText('privmsg', {text: event.msg}), 'privmsg', {time: event.time});
                 break;
 
             case 'action':
-                panel.addMsg('', utils.styleText('action', {nick: event.nick, text: event.msg}), 'action', {time: event.time});
+                panel.addMsg('', styleText('action', {nick: event.nick, text: event.msg}), 'action', {time: event.time});
                 break;
 
             case 'notice':
-                panel.addMsg('[' + (event.nick||'') + ']', utils.styleText('notice', {text: event.msg}), 'notice', {time: event.time});
+                panel.addMsg('[' + (event.nick||'') + ']', styleText('notice', {text: event.msg}), 'notice', {time: event.time});
 
                 // Show this notice to the active panel if it didn't have a set target, but only in an active channel or query window
                 active_panel = Application.instance().panels().active;
 
                 if (!event.from_server && panel === this.panels.server && active_panel !== this.panels.server) {
-                    if (active_panel.get('network') === this && (active_panel.isChannel() || active_panel.isQuery()))
-                        active_panel.addMsg('[' + (event.nick||'') + ']', utils.styleText('notice', {text: event.msg}), 'notice', {time: event.time});
+                    if (active_panel.get('network') === this && (active_panel.isChannel() || active_panel.isQuery())) {
+                        active_panel.addMsg('[' + (event.nick||'') + ']', styleText('notice', {text: event.msg}), 'notice', {time: event.time});
+                    }
                 }
                 break;
             }
@@ -548,15 +565,18 @@ define('misc/network', function(require, exports, module) {
         var member;
 
         $.each(this.panels.models, function (index, panel) {
-            if (panel.get('name') == event.nick)
+            if (panel.get('name') === event.nick) {
                 panel.set('name', event.newnick);
+            }
 
-            if (!panel.isChannel()) return;
+            if (!panel.isChannel()) {
+                return;
+            }
 
             member = panel.get('members').getByNick(event.nick);
             if (member) {
                 member.set('nick', event.newnick);
-                panel.addMsg('', utils.styleText('nick_changed', {nick: event.nick, text: utils.translateText('client_models_network_nickname_changed', [event.newnick]), channel: name}), 'action nick', {time: event.time});
+                panel.addMsg('', styleText('nick_changed', {nick: event.nick, text: translator.translateText('client_models_network_nickname_changed', [event.newnick]), channel: name}), 'action nick', {time: event.time});
             }
         });
     }
@@ -585,7 +605,7 @@ define('misc/network', function(require, exports, module) {
             return;
         }
 
-        this.panels.server.addMsg('[' + event.nick + ']',  utils.styleText('ctcp', {text: event.msg}), 'ctcp', {time: event.time});
+        this.panels.server.addMsg('[' + event.nick + ']',  styleText('ctcp', {text: event.msg}), 'ctcp', {time: event.time});
     }
 
 
@@ -593,7 +613,9 @@ define('misc/network', function(require, exports, module) {
     function onTopic(event) {
         var c;
         c = this.panels.getByName(event.channel);
-        if (!c) return;
+        if (!c) {
+            return;
+        }
 
         // Set the channels topic
         c.set('topic', event.topic);
@@ -609,7 +631,9 @@ define('misc/network', function(require, exports, module) {
     function onTopicSetBy(event) {
         var c, when;
         c = this.panels.getByName(event.channel);
-        if (!c) return;
+        if (!c) {
+            return;
+        }
 
         when = new Date(event.when * 1000);
         c.set('topic_set_by', {nick: event.nick, when: when});
@@ -619,7 +643,9 @@ define('misc/network', function(require, exports, module) {
 
     function onChannelInfo(event) {
         var channel = this.panels.getByName(event.channel);
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
         if (event.url) {
             channel.set('info_url', event.url);
@@ -635,11 +661,13 @@ define('misc/network', function(require, exports, module) {
             channel = this.panels.getByName(event.channel);
 
         // If we didn't find a channel for this, may aswell leave
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
         channel.temp_userlist = channel.temp_userlist || [];
         _.each(event.users, function (item) {
-            var user = new (require('ui/members/member'))({
+            var user = new Member({
                 nick: item.nick,
                 modes: item.modes,
                 user_prefixes: that.get('user_prefixes')
@@ -655,7 +683,9 @@ define('misc/network', function(require, exports, module) {
         channel = this.panels.getByName(event.channel);
 
         // If we didn't find a channel for this, may aswell leave
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
         // Update the members list with the new list
         channel.get('members').reset(channel.temp_userlist || []);
@@ -668,8 +698,9 @@ define('misc/network', function(require, exports, module) {
 
     function onBanlist(event) {
         var channel = this.panels.getByName(event.channel);
-        if (!channel)
+        if (!channel) {
             return;
+        }
 
         channel.set('banlist', event.bans || []);
     }
@@ -706,8 +737,12 @@ define('misc/network', function(require, exports, module) {
             return_string = [];
             _.each(modes, function (modeset, param) {
                 var str = '';
-                if (modeset['+']) str += '+' + modeset['+'];
-                if (modeset['-']) str += '-' + modeset['-'];
+                if (modeset['+']) {
+                    str += '+' + modeset['+'];
+                }
+                if (modeset['-']) {
+                    str += '-' + modeset['-'];
+                }
                 return_string.push(str + ' ' + param);
             });
             return_string = return_string.join(', ');
@@ -746,11 +781,12 @@ define('misc/network', function(require, exports, module) {
                 }
 
                 // TODO: Be smart, remove this specific ban from the banlist rather than request a whole banlist
-                if (event.modes[i].mode[1] == 'b')
+                if (event.modes[i].mode[1] === 'b') {
                     request_updated_banlist = true;
+                }
 
                 // Remember the key being set
-                if (event.modes[i].mode[1] == 'k') {
+                if (event.modes[i].mode[1] === 'k') {
                     if (event.modes[i].mode[0] === '+') {
                         channel.set('key', event.modes[i].param);
                     } else if (event.modes[i].mode[0] === '-') {
@@ -759,16 +795,17 @@ define('misc/network', function(require, exports, module) {
                 }
             }
 
-            channel.addMsg('', utils.styleText('mode', {nick: event.nick, text: utils.translateText('client_models_network_mode', [friendlyModeString()]), channel: event.target}), 'action mode', {time: event.time});
+            channel.addMsg('', styleText('mode', {nick: event.nick, text: translator.translateText('client_models_network_mode', [friendlyModeString()]), channel: event.target}), 'action mode', {time: event.time});
 
             // TODO: Be smart, remove the specific ban from the banlist rather than request a whole banlist
-            if (request_updated_banlist)
+            if (request_updated_banlist) {
                 this.gateway.raw('MODE ' + channel.get('name') + ' +b');
+            }
 
         } else {
             // This is probably a mode being set on us.
             if (event.target.toLowerCase() === this.get("nick").toLowerCase()) {
-                this.panels.server.addMsg('', utils.styleText('selfmode', {nick: event.nick, text: utils.translateText('client_models_network_mode', [friendlyModeString()]), channel: event.target}), 'action mode');
+                this.panels.server.addMsg('', styleText('selfmode', {nick: event.nick, text: translator.translateText('client_models_network_mode', [friendlyModeString()]), channel: event.target}), 'action mode');
             } else {
                console.log('MODE command recieved for unknown target %s: ', event.target, event);
             }
@@ -778,38 +815,39 @@ define('misc/network', function(require, exports, module) {
 
 
     function onWhois(event) {
-        _kiwi.global.events.emit('whois', {nick: event.nick, network: this.gateway, whois: event})
+        events.emit('whois', {nick: event.nick, network: this.gateway, whois: event})
         .then(function() {
             var logon_date, idle_time = '', panel;
 
-            if (event.end)
+            if (event.end) {
                 return;
+            }
 
             if (typeof event.idle !== 'undefined') {
-                idle_time = utils.secondsToTime(parseInt(event.idle, 10));
+                idle_time = secondsToTime(parseInt(event.idle, 10));
                 idle_time = idle_time.h.toString().lpad(2, "0") + ':' + idle_time.m.toString().lpad(2, "0") + ':' + idle_time.s.toString().lpad(2, "0");
             }
 
             panel = Application.instance().panels().active;
             if (event.ident) {
-                panel.addMsg(event.nick, utils.styleText('whois_ident', {nick: event.nick, ident: event.ident, host: event.hostname, text: event.msg}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_ident', {nick: event.nick, ident: event.ident, host: event.hostname, text: event.msg}), 'whois');
 
             } else if (event.chans) {
-                panel.addMsg(event.nick, utils.styleText('whois_channels', {nick: event.nick, text: utils.translateText('client_models_network_channels', [event.chans])}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_channels', {nick: event.nick, text: translator.translateText('client_models_network_channels', [event.chans])}), 'whois');
             } else if (event.irc_server) {
-                panel.addMsg(event.nick, utils.styleText('whois_server', {nick: event.nick, text: utils.translateText('client_models_network_server', [event.irc_server, event.server_info])}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_server', {nick: event.nick, text: translator.translateText('client_models_network_server', [event.irc_server, event.server_info])}), 'whois');
             } else if (event.msg) {
-                panel.addMsg(event.nick, utils.styleText('whois', {text: event.msg}), 'whois');
+                panel.addMsg(event.nick, styleText('whois', {text: event.msg}), 'whois');
             } else if (event.logon) {
                 logon_date = new Date();
                 logon_date.setTime(event.logon * 1000);
-                logon_date = require('utils/formatdate')(logon_date);
+                logon_date = formatDate(logon_date);
 
-                panel.addMsg(event.nick, utils.styleText('whois_idle_and_signon', {nick: event.nick, text: utils.translateText('client_models_network_idle_and_signon', [idle_time, logon_date])}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_idle_and_signon', {nick: event.nick, text: translator.translateText('client_models_network_idle_and_signon', [idle_time, logon_date])}), 'whois');
             } else if (event.away_reason) {
-                panel.addMsg(event.nick, utils.styleText('whois_away', {nick: event.nick, text: utils.translateText('client_models_network_away', [event.away_reason])}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_away', {nick: event.nick, text: translator.translateText('client_models_network_away', [event.away_reason])}), 'whois');
             } else {
-                panel.addMsg(event.nick, utils.styleText('whois_idle', {nick: event.nick, text: utils.translateText('client_models_network_idle', [idle_time])}), 'whois');
+                panel.addMsg(event.nick, styleText('whois_idle', {nick: event.nick, text: translator.translateText('client_models_network_idle', [idle_time])}), 'whois');
             }
         });
     }
@@ -817,23 +855,26 @@ define('misc/network', function(require, exports, module) {
     function onWhowas(event) {
         var panel;
 
-        if (event.end)
+        if (event.end) {
             return;
+        }
 
         panel = Application.instance().panels().active;
         if (event.hostname) {
-            panel.addMsg(event.nick, utils.styleText('who', {nick: event.nick, ident: event.ident, host: event.hostname, realname: event.real_name, text: event.msg}), 'whois');
+            panel.addMsg(event.nick, styleText('who', {nick: event.nick, ident: event.ident, host: event.hostname, realname: event.real_name, text: event.msg}), 'whois');
         } else {
-            panel.addMsg(event.nick, utils.styleText('whois_notfound', {nick: event.nick, text: utils.translateText('client_models_network_nickname_notfound', [])}), 'whois');
+            panel.addMsg(event.nick, styleText('whois_notfound', {nick: event.nick, text: translator.translateText('client_models_network_nickname_notfound', [])}), 'whois');
         }
     }
 
 
     function onAway(event) {
         $.each(this.panels.models, function (index, panel) {
-            if (!panel.isChannel()) return;
+            if (!panel.isChannel()) {
+                return;
+            }
 
-            member = panel.get('members').getByNick(event.nick);
+            var member = panel.get('members').getByNick(event.nick);
             if (member) {
                 member.set('away', !(!event.reason));
             }
@@ -842,8 +883,8 @@ define('misc/network', function(require, exports, module) {
 
 
 
-    function onListStart(event) {
-        var chanlist = require('ui/panels/applet').loadOnce('kiwi_chanlist');
+    function onListStart() {
+        var chanlist = AppletPanel.loadOnce('kiwi_chanlist');
         chanlist.view.show();
     }
 
@@ -858,65 +899,64 @@ define('misc/network', function(require, exports, module) {
 
         switch (event.error) {
         case 'banned_from_channel':
-            panel.addMsg(' ', utils.styleText('channel_banned', {nick: event.nick, text: utils.translateText('client_models_network_banned', [event.channel, event.reason]), channel: event.channel}), 'status');
-            Application.instance().message.text(utils.translateText('client_models_network_banned', [event.channel, event.reason]));
+            panel.addMsg(' ', styleText('channel_banned', {nick: event.nick, text: translator.translateText('client_models_network_banned', [event.channel, event.reason]), channel: event.channel}), 'status');
+            Application.instance().message.text(translator.translateText('client_models_network_banned', [event.channel, event.reason]));
             break;
         case 'bad_channel_key':
-            panel.addMsg(' ', utils.styleText('channel_badkey', {nick: event.nick, text: utils.translateText('client_models_network_channel_badkey', [event.channel]), channel: event.channel}), 'status');
-            Application.instance().message.text(utils.translateText('client_models_network_channel_badkey', [event.channel]));
+            panel.addMsg(' ', styleText('channel_badkey', {nick: event.nick, text: translator.translateText('client_models_network_channel_badkey', [event.channel]), channel: event.channel}), 'status');
+            Application.instance().message.text(translator.translateText('client_models_network_channel_badkey', [event.channel]));
             break;
         case 'invite_only_channel':
-            panel.addMsg(' ', utils.styleText('channel_inviteonly', {nick: event.nick, text: utils.translateText('client_models_network_channel_inviteonly', [event.nick, event.channel]), channel: event.channel}), 'status');
-            Application.instance().message.text(event.channel + ' ' + utils.translateText('client_models_network_channel_inviteonly'));
+            panel.addMsg(' ', styleText('channel_inviteonly', {nick: event.nick, text: translator.translateText('client_models_network_channel_inviteonly', [event.nick, event.channel]), channel: event.channel}), 'status');
+            Application.instance().message.text(event.channel + ' ' + translator.translateText('client_models_network_channel_inviteonly'));
             break;
         case 'user_on_channel':
-            panel.addMsg(' ', utils.styleText('channel_alreadyin', {nick: event.nick, text: utils.translateText('client_models_network_channel_alreadyin'), channel: event.channel}));
+            panel.addMsg(' ', styleText('channel_alreadyin', {nick: event.nick, text: translator.translateText('client_models_network_channel_alreadyin'), channel: event.channel}));
             break;
         case 'channel_is_full':
-            panel.addMsg(' ', utils.styleText('channel_limitreached', {nick: event.nick, text: utils.translateText('client_models_network_channel_limitreached', [event.channel]), channel: event.channel}), 'status');
-            Application.instance().message.text(event.channel + ' ' + utils.translateText('client_models_network_channel_limitreached', [event.channel]));
+            panel.addMsg(' ', styleText('channel_limitreached', {nick: event.nick, text: translator.translateText('client_models_network_channel_limitreached', [event.channel]), channel: event.channel}), 'status');
+            Application.instance().message.text(event.channel + ' ' + translator.translateText('client_models_network_channel_limitreached', [event.channel]));
             break;
         case 'chanop_privs_needed':
-            panel.addMsg(' ', utils.styleText('chanop_privs_needed', {text: event.reason, channel: event.channel}), 'status');
+            panel.addMsg(' ', styleText('chanop_privs_needed', {text: event.reason, channel: event.channel}), 'status');
             Application.instance().message.text(event.reason + ' (' + event.channel + ')');
             break;
         case 'cannot_send_to_channel':
-            panel.addMsg(' ', '== ' + utils.translateText('Cannot send message to channel, you are not voiced', [event.channel, event.reason]), 'status');
+            panel.addMsg(' ', '== ' + translator.translateText('Cannot send message to channel, you are not voiced', [event.channel, event.reason]), 'status');
             break;
         case 'no_such_nick':
             tmp = this.panels.getByName(event.nick);
             if (tmp) {
-                tmp.addMsg(' ', utils.styleText('no_such_nick', {nick: event.nick, text: event.reason, channel: event.channel}), 'status');
+                tmp.addMsg(' ', styleText('no_such_nick', {nick: event.nick, text: event.reason, channel: event.channel}), 'status');
             } else {
-                this.panels.server.addMsg(' ', utils.styleText('no_such_nick', {nick: event.nick, text: event.reason, channel: event.channel}), 'status');
+                this.panels.server.addMsg(' ', styleText('no_such_nick', {nick: event.nick, text: event.reason, channel: event.channel}), 'status');
             }
             break;
         case 'nickname_in_use':
-            this.panels.server.addMsg(' ', utils.styleText('nickname_alreadyinuse', {nick: event.nick, text: utils.translateText('client_models_network_nickname_alreadyinuse', [event.nick]), channel: event.channel}), 'status');
+            this.panels.server.addMsg(' ', styleText('nickname_alreadyinuse', {nick: event.nick, text: translator.translateText('client_models_network_nickname_alreadyinuse', [event.nick]), channel: event.channel}), 'status');
             if (this.panels.server !== this.panels.active) {
-                Application.instance().message.text(utils.translateText('client_models_network_nickname_alreadyinuse', [event.nick]));
+                Application.instance().message.text(translator.translateText('client_models_network_nickname_alreadyinuse', [event.nick]));
             }
 
             // Only show the nickchange component if the controlbox is open
             if (Application.instance().controlbox.$el.css('display') !== 'none') {
-                (new (require('views/nickchangebox'))()).render();
+                (new NickChangeBox()).render();
             }
 
             break;
 
         case 'password_mismatch':
-            this.panels.server.addMsg(' ', utils.styleText('channel_badpassword', {nick: event.nick, text: utils.translateText('client_models_network_badpassword', []), channel: event.channel}), 'status');
+            this.panels.server.addMsg(' ', styleText('channel_badpassword', {nick: event.nick, text: translator.translateText('client_models_network_badpassword', []), channel: event.channel}), 'status');
             break;
 
         case 'error':
             if (event.reason) {
-                this.panels.server.addMsg(' ', utils.styleText('general_error', {text: event.reason}), 'status');
+                this.panels.server.addMsg(' ', styleText('general_error', {text: event.reason}), 'status');
             }
             break;
 
         default:
             // We don't know what data contains, so don't do anything with it.
-            //_kiwi.front.tabviews.server.addMsg(null, ' ', '== ' + data, 'status');
         }
     }
 
@@ -925,11 +965,11 @@ define('misc/network', function(require, exports, module) {
         var display_params = _.clone(event.params);
 
         // A lot of commands have our nick as the first parameter. This is redundant for us
-        if (display_params[0] && display_params[0] == this.get('nick')) {
+        if (display_params[0] && display_params[0] === this.get('nick')) {
             display_params.shift();
         }
 
-        this.panels.server.addMsg('', utils.styleText('unknown_command', {text: '[' + event.command + '] ' + display_params.join(', ', '')}));
+        this.panels.server.addMsg('', styleText('unknown_command', {text: '[' + event.command + '] ' + display_params.join(', ', '')}));
     }
 
 
@@ -937,11 +977,11 @@ define('misc/network', function(require, exports, module) {
         var active_panel = Application.instance().panels().active;
 
         // Send to server panel
-        this.panels.server.addMsg('[' + (event.nick||'') + ']', utils.styleText('wallops', {text: event.msg}), 'wallops', {time: event.time});
+        this.panels.server.addMsg('[' + (event.nick||'') + ']', styleText('wallops', {text: event.msg}), 'wallops', {time: event.time});
 
         // Send to active panel if its a channel/query *and* it's related to this network
-        if (active_panel !== this.panels.server && (active_panel.isChannel() || active_panel.isQuery()) && active_panel.get('network') === this)
-            active_panel.addMsg('[' + (event.nick||'') + ']', utils.styleText('wallops', {text: event.msg}), 'wallops', {time: event.time});
+        if (active_panel !== this.panels.server && (active_panel.isChannel() || active_panel.isQuery()) && active_panel.get('network') === this) {
+            active_panel.addMsg('[' + (event.nick||'') + ']', styleText('wallops', {text: event.msg}), 'wallops', {time: event.time});
+        }
     }
-
 });

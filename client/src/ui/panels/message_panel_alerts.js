@@ -1,9 +1,5 @@
-define('ui/panels/message_panel_alerts', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = function messagePanelAlerts(panel, message) {
+define('ui/panels/message_panel_alerts', ['helpers/translator', 'ui/application', 'helpers/settings'], function (translator, Application, settings) {
+    return function messagePanelAlerts(panel, message) {
         var msg = message.view.display;
 
         // Activity/alerts based on the type of new message. We only do this if we have
@@ -13,7 +9,7 @@ define('ui/panels/message_panel_alerts', function(require, exports, module) {
                 panel.view.alert('action');
 
             } else if (msg.is_highlight) {
-                Application.instance().view.alertWindow('* ' + utils.translateText('client_views_panel_activity'));
+                Application.instance().view.alertWindow('* ' + translator.translateText('client_views_panel_activity'));
                 Application.instance().view.favicon.newHighlight();
                 Application.instance().view.playSound('highlight');
                 Application.instance().view.showNotification(panel.get('name'), msg.unparsed_msg);
@@ -22,13 +18,13 @@ define('ui/panels/message_panel_alerts', function(require, exports, module) {
             } else {
                 // If this is the active panel, send an alert out
                 if (panel.isActive()) {
-                    Application.instance().view.alertWindow('* ' + utils.translateText('client_views_panel_activity'));
+                    Application.instance().view.alertWindow('* ' + translator.translateText('client_views_panel_activity'));
                 }
                 panel.view.alert('activity');
             }
 
             if (panel.isQuery() && !panel.isActive()) {
-                Application.instance().view.alertWindow('* ' + utils.translateText('client_views_panel_activity'));
+                Application.instance().view.alertWindow('* ' + translator.translateText('client_views_panel_activity'));
 
                 // Highlights have already been dealt with above
                 if (!msg.is_highlight) {
@@ -42,9 +38,11 @@ define('ui/panels/message_panel_alerts', function(require, exports, module) {
             // Update the activity counters
             (function () {
                 // Only inrement the counters if we're not the active panel
-                if (panel.isActive()) return;
+                if (panel.isActive()) {
+                    return;
+                }
 
-                var count_all_activity = _kiwi.global.settings.get('count_all_activity'),
+                var count_all_activity = settings.get('count_all_activity'),
                     exclude_message_types, new_count;
 
                 // Set the default config value

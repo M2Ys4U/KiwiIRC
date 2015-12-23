@@ -1,32 +1,43 @@
-// Model for this = require('./networkpanellist')
-define('ui/networkpanellist/tabs', function(require, exports, module) {
+define('ui/networkpanellist/tabs', ['lib/backbone'], function (Backbone) {
+    var Tabs;
 
-    var Application = require('ui/application/');
+    function createTabView(Application) {
+        return Backbone.View.extend({
+            tagName: 'ul',
+            className: 'connections',
 
-    module.exports = Backbone.View.extend({
-        tagName: 'ul',
-        className: 'connections',
+            initialize: function() {
+                this.model.on('add', this.networkAdded, this);
+                this.model.on('remove', this.networkRemoved, this);
 
-        initialize: function() {
-            this.model.on('add', this.networkAdded, this);
-            this.model.on('remove', this.networkRemoved, this);
+                this.$el.appendTo(Application.instance().view.$el.find('.tabs'));
+            },
 
-            this.$el.appendTo(Application.instance().view.$el.find('.tabs'));
-        },
+            networkAdded: function(network) {
+                $('<li class="connection"></li>')
+                    .append(network.panels.view.$el)
+                    .appendTo(this.$el);
+            },
 
-        networkAdded: function(network) {
-            $('<li class="connection"></li>')
-                .append(network.panels.view.$el)
-                .appendTo(this.$el);
-        },
+            networkRemoved: function(network) {
+                // Remove the containing list element
+                network.panels.view.$el.parent().remove();
 
-        networkRemoved: function(network) {
-            // Remove the containing list element
-            network.panels.view.$el.parent().remove();
+                network.panels.view.remove();
 
-            network.panels.view.remove();
+                Application.instance().view.doLayout();
+            }
+        });
+    }
 
-            Application.instance().view.doLayout();
+    function init(Application) {
+        if (!Tabs) {
+            Tabs = createTabView(Application);
         }
-    });
+        return Tabs;
+    }
+
+    return {
+        init: init
+    };
 });

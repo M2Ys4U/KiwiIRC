@@ -1,8 +1,5 @@
-define('ui/panels/panel_view', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/panels/panel_view', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         tagName: "div",
         className: "panel",
 
@@ -80,7 +77,9 @@ define('ui/panels/panel_view', function(require, exports, module) {
 
         alert: function (level) {
             // No need to highlight if this si the active panel
-            if (this.model == Application.instance().panels().active) return;
+            if (this.model === Application.instance().panels().active) {
+                return;
+            }
 
             var types, type_idx;
             types = ['none', 'action', 'activity', 'highlight'];

@@ -1,8 +1,5 @@
-define('ui/channeltools/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/channeltools', ['lib/backbone', 'ui/application', 'ui/channelinfo'], function (Backbone, Application, ChannelInfo) {
+    return Backbone.View.extend({
         events: {
             'click .channel-info': 'infoClick',
             'click .channel-part': 'partClick'
@@ -10,11 +7,11 @@ define('ui/channeltools/', function(require, exports, module) {
 
         initialize: function () {},
 
-        infoClick: function (event) {
-            new (require('ui/channelinfo/'))({channel: Application.instance().panels().active});
+        infoClick: function () {
+            return new ChannelInfo({channel: Application.instance().panels().active});
         },
 
-        partClick: function (event) {
+        partClick: function () {
             Application.instance().connections.active_connection.gateway.part(Application.instance().panels().active.get('name'));
         }
     });

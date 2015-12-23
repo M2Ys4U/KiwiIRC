@@ -1,8 +1,5 @@
-define('ui/rightbar/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/rightbar', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         events: {
             'click .right-bar-toggle': 'onClickToggle',
             'click .right-bar-toggle-inner': 'onClickToggle'
@@ -27,8 +24,9 @@ define('ui/rightbar/', function(require, exports, module) {
         show: function() {
             this.hidden = false;
 
-            if (!this.keep_hidden)
+            if (!this.keep_hidden) {
                 this.$el.removeClass('disabled');
+            }
 
             this.updateIcon();
         },
@@ -37,8 +35,9 @@ define('ui/rightbar/', function(require, exports, module) {
         // Toggle if the rightbar should be shown or not
         toggle: function(keep_hidden) {
             // Hacky, but we need to ignore the toggle() call from doLayout() as we are overriding it
-            if (this.ignore_layout)
+            if (this.ignore_layout) {
                 return true;
+            }
 
             if (typeof keep_hidden === 'undefined') {
                 this.keep_hidden = !this.keep_hidden;
@@ -76,7 +75,7 @@ define('ui/rightbar/', function(require, exports, module) {
         },
 
 
-        onClickToggle: function(event) {
+        onClickToggle: function() {
             this.toggle();
 
             // Hacky, but we need to ignore the toggle() call from doLayout() as we are overriding it

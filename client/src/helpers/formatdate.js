@@ -1,8 +1,5 @@
-define('utils/formatdate', function(require, exports, module) {
-    
-    var utils = require('helpers/utils');
-
-    module.exports = (function() {
+define('helpers/formatdate', ['helpers/translator'], function (translator) {
+    return (function() {
         /*
         Modified version of date.format.js
         https://github.com/jacwright/date.format
@@ -72,50 +69,50 @@ define('utils/formatdate', function(require, exports, module) {
 
         var initLocaleFormats = function() {
             shortMonths = [
-                utils.translateText('client.libs.date_format.short_months.january'),
-                utils.translateText('client.libs.date_format.short_months.february'),
-                utils.translateText('client.libs.date_format.short_months.march'),
-                utils.translateText('client.libs.date_format.short_months.april'),
-                utils.translateText('client.libs.date_format.short_months.may'),
-                utils.translateText('client.libs.date_format.short_months.june'),
-                utils.translateText('client.libs.date_format.short_months.july'),
-                utils.translateText('client.libs.date_format.short_months.august'),
-                utils.translateText('client.libs.date_format.short_months.september'),
-                utils.translateText('client.libs.date_format.short_months.october'),
-                utils.translateText('client.libs.date_format.short_months.november'),
-                utils.translateText('client.libs.date_format.short_months.december')
+                translator.translateText('client.libs.date_format.short_months.january'),
+                translator.translateText('client.libs.date_format.short_months.february'),
+                translator.translateText('client.libs.date_format.short_months.march'),
+                translator.translateText('client.libs.date_format.short_months.april'),
+                translator.translateText('client.libs.date_format.short_months.may'),
+                translator.translateText('client.libs.date_format.short_months.june'),
+                translator.translateText('client.libs.date_format.short_months.july'),
+                translator.translateText('client.libs.date_format.short_months.august'),
+                translator.translateText('client.libs.date_format.short_months.september'),
+                translator.translateText('client.libs.date_format.short_months.october'),
+                translator.translateText('client.libs.date_format.short_months.november'),
+                translator.translateText('client.libs.date_format.short_months.december')
             ];
             longMonths = [
-                utils.translateText('client.libs.date_format.long_months.january'),
-                utils.translateText('client.libs.date_format.long_months.february'),
-                utils.translateText('client.libs.date_format.long_months.march'),
-                utils.translateText('client.libs.date_format.long_months.april'),
-                utils.translateText('client.libs.date_format.long_months.may'),
-                utils.translateText('client.libs.date_format.long_months.june'),
-                utils.translateText('client.libs.date_format.long_months.july'),
-                utils.translateText('client.libs.date_format.long_months.august'),
-                utils.translateText('client.libs.date_format.long_months.september'),
-                utils.translateText('client.libs.date_format.long_months.october'),
-                utils.translateText('client.libs.date_format.long_months.november'),
-                utils.translateText('client.libs.date_format.long_months.december')
+                translator.translateText('client.libs.date_format.long_months.january'),
+                translator.translateText('client.libs.date_format.long_months.february'),
+                translator.translateText('client.libs.date_format.long_months.march'),
+                translator.translateText('client.libs.date_format.long_months.april'),
+                translator.translateText('client.libs.date_format.long_months.may'),
+                translator.translateText('client.libs.date_format.long_months.june'),
+                translator.translateText('client.libs.date_format.long_months.july'),
+                translator.translateText('client.libs.date_format.long_months.august'),
+                translator.translateText('client.libs.date_format.long_months.september'),
+                translator.translateText('client.libs.date_format.long_months.october'),
+                translator.translateText('client.libs.date_format.long_months.november'),
+                translator.translateText('client.libs.date_format.long_months.december')
             ];
             shortDays = [
-                utils.translateText('client.libs.date_format.short_days.monday'),
-                utils.translateText('client.libs.date_format.short_days.tuesday'),
-                utils.translateText('client.libs.date_format.short_days.wednesday'),
-                utils.translateText('client.libs.date_format.short_days.thursday'),
-                utils.translateText('client.libs.date_format.short_days.friday'),
-                utils.translateText('client.libs.date_format.short_days.saturday'),
-                utils.translateText('client.libs.date_format.short_days.sunday')
+                translator.translateText('client.libs.date_format.short_days.monday'),
+                translator.translateText('client.libs.date_format.short_days.tuesday'),
+                translator.translateText('client.libs.date_format.short_days.wednesday'),
+                translator.translateText('client.libs.date_format.short_days.thursday'),
+                translator.translateText('client.libs.date_format.short_days.friday'),
+                translator.translateText('client.libs.date_format.short_days.saturday'),
+                translator.translateText('client.libs.date_format.short_days.sunday')
             ];
             longDays = [
-                utils.translateText('client.libs.date_format.long_days.monday'),
-                utils.translateText('client.libs.date_format.long_days.tuesday'),
-                utils.translateText('client.libs.date_format.long_days.wednesday'),
-                utils.translateText('client.libs.date_format.long_days.thursday'),
-                utils.translateText('client.libs.date_format.long_days.friday'),
-                utils.translateText('client.libs.date_format.long_days.saturday'),
-                utils.translateText('client.libs.date_format.long_days.sunday')
+                translator.translateText('client.libs.date_format.long_days.monday'),
+                translator.translateText('client.libs.date_format.long_days.tuesday'),
+                translator.translateText('client.libs.date_format.long_days.wednesday'),
+                translator.translateText('client.libs.date_format.long_days.thursday'),
+                translator.translateText('client.libs.date_format.long_days.friday'),
+                translator.translateText('client.libs.date_format.long_days.saturday'),
+                translator.translateText('client.libs.date_format.long_days.sunday')
             ];
 
             locale_init = true;
@@ -125,11 +122,12 @@ define('utils/formatdate', function(require, exports, module) {
 
         // Finally.. the actuall formatDate function
         return function(working_date, format) {
-            if (!locale_init)
+            if (!locale_init) {
                 initLocaleFormats();
+            }
 
             working_date = working_date || new Date();
-            format = format || utils.translateText('client_date_format');
+            format = format || translator.translateText('client_date_format');
 
             return format.replace(/(\\?)(.)/g, function(_, esc, chr) {
                 return (esc === '' && replaceChars[chr]) ? replaceChars[chr].call(working_date) : chr;

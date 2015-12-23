@@ -1,9 +1,6 @@
-define('ui/members/memberlist', function(require, exports, module) {
-
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.Collection.extend({
-        model: require('./member'),
+define('ui/members/memberlist', ['lib/backbone', 'ui/members/member', 'ui/members/memberlist_view'], function (Backbone, Member, MemberListView) {
+    return Backbone.Collection.extend({
+        model: Member,
         comparator: function (a, b) {
             var i, a_modes, b_modes, a_idx, b_idx, a_nick, b_nick;
             var user_prefixes = this.channel.get('network').get('user_prefixes');
@@ -53,8 +50,8 @@ define('ui/members/memberlist', function(require, exports, module) {
         },
 
 
-        initialize: function (options) {
-            this.view = new (require('./memberlist_view'))({"model": this});
+        initialize: function () {
+            this.view = new MemberListView({"model": this});
             this.initNickCache();
         },
 

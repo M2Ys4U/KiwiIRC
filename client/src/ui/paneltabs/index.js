@@ -1,19 +1,17 @@
-define('ui/paneltabs/', function(require, exports, module) {
-    module.exports = Backbone.Collection.extend({
-        model: require('ui/panels/panel'),
+define('ui/paneltabs', ['lib/backbone', 'ui/panels/panel', 'ui/paneltabs/tabs'], function (Backbone, panel, Tabs) {
+    return Backbone.Collection.extend({
+        model: panel,
 
         comparator: function (chan) {
             return chan.get('name');
         },
         initialize: function (elements, network) {
-            var that = this;
-
             // If this PanelList is associated with a network/connection
             if (network) {
                 this.network = network;
             }
 
-            this.view = new (require('./tabs'))({model: this});
+            this.view = new Tabs({model: this});
 
             // Holds the active panel
             this.active = null;
@@ -31,7 +29,9 @@ define('ui/paneltabs/', function(require, exports, module) {
 
 
         getByCid: function (cid) {
-            if (typeof name !== 'string') return;
+            if (typeof name !== 'string') {
+                return;
+            }
 
             return this.find(function (c) {
                 return cid === c.cid;
@@ -41,7 +41,9 @@ define('ui/paneltabs/', function(require, exports, module) {
 
 
         getByName: function (name) {
-            if (typeof name !== 'string') return;
+            if (typeof name !== 'string') {
+                return;
+            }
 
             return this.find(function (c) {
                 return name.toLowerCase() === c.get('name').toLowerCase();

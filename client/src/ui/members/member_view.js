@@ -1,7 +1,7 @@
-define('ui/members/member_view', function(require, exports, module) {
-    module.exports = Backbone.View.extend({
+define('ui/members/member_view', ['lib/backbone'], function (Backbone) {
+    return Backbone.View.extend({
         tagName: "li",
-        initialize: function (options) {
+        initialize: function () {
             this.model.bind('change', this.render, this);
             this.render();
         },

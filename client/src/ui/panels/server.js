@@ -1,16 +1,16 @@
-define('ui/panels/server', function(require, exports, module) {
-    module.exports = require('./channel').extend({
-        initialize: function (attributes) {
+define('ui/panels/server', ['ui/panels/channel', 'ui/messagelist', 'ui/panels/channel_view', 'helpers/events'], function (Channel, MessageList, ChannelView, events) {
+    return Channel.extend({
+        initialize: function () {
             var name = "Server",
-                messages = new (require('ui/messagelist/'))({network: this.get('network')});
+                messages = new MessageList({network: this.get('network')});
             
             this.set({
                 "messages": messages,
                 "name": name
             }, {"silent": true});
 
-            this.view = new (require('./channel_view'))({"model": this, "name": name});
-            _kiwi.global.events.emit('panel:created', {panel: this});
+            this.view = new ChannelView({"model": this, "name": name});
+            events.emit('panel:created', {panel: this});
         },
 
         isServer: function () {

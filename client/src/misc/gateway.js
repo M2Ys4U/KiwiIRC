@@ -1,16 +1,18 @@
-define('misc/gateway', function(require, exports, module) {
+define('misc/gateway', ['lib/backbone', 'lib/engine.io.tools', 'ui/application', 'misc/network'], function (Backbone, EngineioTools, Application, Network) {
+    var instance;
 
-    var Application = require('ui/application/');
+    return Backbone.Model.extend({
 
-    module.exports = Backbone.Model.extend({
+        initialize: function (opts) {
 
-        initialize: function () {
+            this.build_version = opts.build_version;
 
             // For ease of access. The socket.io object
             this.socket = this.get('socket');
 
             // Used to check if a disconnection was unplanned
             this.disconnect_requested = false;
+            instance = this;
         },
 
 
@@ -44,7 +46,7 @@ define('misc/gateway', function(require, exports, module) {
 
             // If we have an existing RPC object, clean it up before replacing it
             if (this.rpc) {
-                rpc.dispose();
+                this.rpc.dispose();
             }
             this.rpc = new EngineioTools.Rpc(this.socket);
 
@@ -54,7 +56,7 @@ define('misc/gateway', function(require, exports, module) {
             });
 
             this.socket.on('error', function (e) {
-                console.log("_kiwi.gateway.socket.on('error')", {reason: e});
+                console.log("Gateway.socket.on('error')", {reason: e});
                 if (that.connect_callback) {
                     that.connect_callback(e);
                     delete that.connect_callback;
@@ -63,8 +65,8 @@ define('misc/gateway', function(require, exports, module) {
                 that.trigger("connect_fail", {reason: e});
             });
 
-            this.socket.on('connecting', function (transport_type) {
-                console.log("_kiwi.gateway.socket.on('connecting')");
+            this.socket.on('connecting', function () {
+                console.log("Gateway.socket.on('connecting')");
                 that.trigger("connecting");
             });
 
@@ -80,7 +82,9 @@ define('misc/gateway', function(require, exports, module) {
 
                 // Each minute we need to trigger a heartbeat. Server expects 2min, but to be safe we do it every 1min
                 var heartbeat = function() {
-                    if (!that.rpc) return;
+                    if (!that.rpc) {
+                        return;
+                    }
 
                     that.rpc('kiwi.heartbeat');
                     that._heartbeat_tmr = setTimeout(heartbeat, 60000);
@@ -88,7 +92,7 @@ define('misc/gateway', function(require, exports, module) {
 
                 heartbeat();
 
-                console.log("_kiwi.gateway.socket.on('open')");
+                console.log("Gateway.socket.on('open')");
             });
 
             this.rpc.on('too_many_connections', function () {
@@ -105,16 +109,16 @@ define('misc/gateway', function(require, exports, module) {
 
             this.socket.on('close', function () {
                 that.trigger("disconnect", {});
-                console.log("_kiwi.gateway.socket.on('close')");
+                console.log("Gateway.socket.on('close')");
             });
 
             this.socket.on('reconnecting', function (status) {
-                console.log("_kiwi.gateway.socket.on('reconnecting')");
+                console.log("Gateway.socket.on('reconnecting')");
                 that.trigger("reconnecting", {delay: status.delay, attempts: status.attempts});
             });
 
             this.socket.on('reconnecting_failed', function () {
-                console.log("_kiwi.gateway.socket.on('reconnect_failed')");
+                console.log("Gateway.socket.on('reconnect_failed')");
             });
         },
 
@@ -153,16 +157,16 @@ define('misc/gateway', function(require, exports, module) {
                             ssl: connection_info.ssl,
                             password: connection_info.password
                         };
-                        connection = new (require('misc/network'))(inf);
+                        connection = new Network(inf);
                         application.connections.add(connection);
                     }
 
-                    console.log("_kiwi.gateway.socket.on('connect')", connection);
-                    callback_fn && callback_fn(err, connection);
+                    console.log("Gateway.socket.on('connect')", connection);
+                    callback_fn && callback_fn(err, connection); //jshint ignore:line
 
                 } else {
-                    console.log("_kiwi.gateway.socket.on('error')", {reason: err});
-                    callback_fn && callback_fn(err);
+                    console.log("Gateway.socket.on('error')", {reason: err});
+                    callback_fn && callback_fn(err); //jshint ignore:line
                 }
             });
         },
@@ -183,15 +187,16 @@ define('misc/gateway', function(require, exports, module) {
             connection_info.options = connection_info.options || {};
 
             // A few optional parameters
-            if (connection_info.options.encoding)
+            if (connection_info.options.encoding) {
                 server_info.encoding = connection_info.options.encoding;
+            }
 
             this.rpc('kiwi.connect_irc', server_info, function (err, server_num) {
                 if (!err) {
-                    callback_fn && callback_fn(err, server_num);
+                    callback_fn && callback_fn(err, server_num); //jshint ignore:line
 
                 } else {
-                    callback_fn && callback_fn(err);
+                    callback_fn && callback_fn(err); //jshint ignore:line
                 }
             });
         },
@@ -205,17 +210,18 @@ define('misc/gateway', function(require, exports, module) {
 
 
         parseKiwi: function (command, data) {
-            var args;
+            var args,
+                that = this;
 
             switch (command) {
             case 'connected':
                 // Send some info on this client to the server
                 args = {
-                    build_version: _kiwi.global.build_version
+                    build_version: that.build_version
                 };
                 this.rpc('kiwi.client_info', args);
 
-                this.connect_callback && this.connect_callback();
+                this.connect_callback && this.connect_callback(); //jshint ignore:line
                 delete this.connect_callback;
 
                 break;
@@ -241,14 +247,14 @@ define('misc/gateway', function(require, exports, module) {
                 });
 
                 // Some events trigger a more in-depth event name
-                if (command == 'message' && data.type) {
+                if (command === 'message' && data.type) {
                     this.trigger('connection ' + network_trigger, {
                         event_name: 'message:' + data.type,
                         event_data: data
                     });
                 }
 
-                if (command == 'channel' && data.type) {
+                if (command === 'channel' && data.type) {
                     this.trigger('connection ' + network_trigger, {
                         event_name: 'channel:' + data.type,
                         event_data: data
@@ -266,12 +272,13 @@ define('misc/gateway', function(require, exports, module) {
         *   @param  {String}    method          RPC method name
         *   @param  {Number}    connection_id   Connection ID this call relates to
         */
-        rpcCall: function(method, connection_id) {
+        rpcCall: function() {
             var args = Array.prototype.slice.call(arguments, 0),
                 application = Application.instance();
 
-            if (typeof args[1] === 'undefined' || args[1] === null)
+            if (typeof args[1] === 'undefined' || args[1] === null) {
                 args[1] = application.connections.active_connection.get('connection_id');
+            }
 
             return this.rpc.apply(this.rpc, args);
         },
@@ -484,6 +491,14 @@ define('misc/gateway', function(require, exports, module) {
             };
 
             this.rpcCall('irc.encoding', connection_id, args, callback);
+        }
+    },
+    {
+        instance: function () {
+            if (!instance) {
+                throw new Error('Gateway is not initialised');
+            }
+             return instance;
         }
     });
 });

@@ -1,9 +1,5 @@
-define('ui/panels/channel_view', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = require('./panel_view').extend({
+define('ui/panels/channel_view', ['helpers/styletext', 'helpers/translator', 'ui/application', 'ui/panels/panel_view', 'ui/panels/message_panel_alerts', 'ui/userbox', 'ui/menubox', 'helpers/events'], function (styleText, translator, Application, PanelView, messagePanelAlerts, UserBox, MenuBox, events) {
+    return PanelView.extend({
         events: function(){
             var parent_events = this.constructor.__super__.events;
 
@@ -60,7 +56,7 @@ define('ui/panels/channel_view', function(require, exports, module) {
 
             // Only show the loader if this is a channel (ie. not a query)
             if (this.model.isChannel()) {
-                this.$el.append('<div class="initial-loader" style="top:40%;text-align:center;position: absolute;z-index: 1;width: 100%;"> ' + utils.translateText('client_views_channel_joining') + ' <span class="loader"></span></div>');
+                this.$el.append('<div class="initial-loader" style="top:40%;text-align:center;position: absolute;z-index: 1;width: 100%;"> ' + translator.translateText('client_views_channel_joining') + ' <span class="loader"></span></div>');
             }
 
             // Move our lastSeenMarker to the bottom if moving away from this tab
@@ -79,13 +75,7 @@ define('ui/panels/channel_view', function(require, exports, module) {
         },
 
 
-        render: function () {
-            var that = this;
-        },
-
-
         newMsg: function(message) {
-            var messagePanelAlerts = require('./message_panel_alerts');
             var event_obj = {
                 panel: this.model,
                 message: message
@@ -93,10 +83,12 @@ define('ui/panels/channel_view', function(require, exports, module) {
 
             // TODO: This plugin trigger should be in the MessageList so that .preventDefault actually
             //       stops it in time
-            _kiwi.global.events.emit('message:display', event_obj)
+            events.emit('message:display', event_obj)
             .then(function() {
                 messagePanelAlerts(event_obj.panel, event_obj.message);
-                if(event_obj.panel.isActive()) event_obj.panel.view.messages.scrollToBottom();
+                if (event_obj.panel.isActive()) {
+                    event_obj.panel.view.messages.scrollToBottom();
+                }
             });
         },
 
@@ -106,7 +98,7 @@ define('ui/panels/channel_view', function(require, exports, module) {
                 topic = this.model.get("topic");
             }
 
-            this.model.addMsg('', utils.styleText('channel_topic', {text: topic, channel: this.model.get('name')}), 'topic');
+            this.model.addMsg('', styleText('channel_topic', {text: topic, channel: this.model.get('name')}), 'topic');
 
             // If this is the active channel then update the topic bar
             if (Application.instance().panels().active === this.model) {
@@ -114,7 +106,7 @@ define('ui/panels/channel_view', function(require, exports, module) {
             }
         },
 
-        topicSetBy: function (topic) {
+        topicSetBy: function () {
             // If this is the active channel then update the topic bar
             if (Application.instance().panels().active === this.model) {
                 Application.instance().topicbar.setCurrentTopicFromChannel(this.model);
@@ -146,7 +138,7 @@ define('ui/panels/channel_view', function(require, exports, module) {
                 return;
             }
 
-            _kiwi.global.events.emit('nick:select', {
+            events.emit('nick:select', {
                 target: $target,
                 member: member,
                 network: this.model.get('network'),
@@ -168,15 +160,15 @@ define('ui/panels/channel_view', function(require, exports, module) {
                 return;
             }
 
-            userbox = new (require('ui/userbox/'))();
+            userbox = new UserBox();
             userbox.setTargets(member, this.model);
             userbox.displayOpItems(are_we_an_op);
 
-            menubox = new (require('ui/menubox/'))(member.get('nick') || 'User');
+            menubox = new MenuBox(member.get('nick') || 'User');
             menubox.addItem('userbox', userbox.$el);
             menubox.showFooter(false);
 
-            _kiwi.global.events.emit('usermenu:created', {menu: menubox, userbox: userbox, user: member})
+            events.emit('usermenu:created', {menu: menubox, userbox: userbox, user: member})
             .then(_.bind(function() {
                 menubox.show();
 
@@ -200,8 +192,8 @@ define('ui/panels/channel_view', function(require, exports, module) {
             .then(null, _.bind(function() {
                 userbox = null;
 
-                menu.dispose();
-                menu = null;
+                menubox.dispose();
+                menubox = null;
             }, this));
         },
 

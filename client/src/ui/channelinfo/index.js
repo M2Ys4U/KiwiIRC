@@ -1,7 +1,7 @@
-define('ui/channelinfo/', function(require, exports, module) {
-	module.exports = Backbone.Model.extend({
-	    initialize: function () {
-	        this.view = new (require('./view'))({"model": this});
-	    }
-	});
+define('ui/channelinfo', ['lib/backbone', 'ui/channelinfo/view'], function (Backbone, ChannelInfoView) {
+    return Backbone.Model.extend({
+        initialize: function () {
+            this.view = new ChannelInfoView({"model": this});
+        }
+    });
 });

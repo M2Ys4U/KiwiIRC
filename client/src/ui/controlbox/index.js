@@ -1,9 +1,7 @@
-define('ui/controlbox/', function(require, exports, module) {
+define('ui/controlbox', ['lib/backbone', 'ui/autocomplete', 'ui/userbox', 'ui/menubox', 'ui/nickchange', 'helpers/inputpreprocessor', 'helpers/translator', 'helpers/settings', 'helpers/events'], function (Backbone, AutoComplete, UserBox, MenuBox, NickChange, InputPreProcessor, translator, settings, events) {
+    var Application, _kiwi;
 
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+    return Backbone.View.extend({
         events: {
             'keydown .inp': 'inputKeyDown',
             'keyup .inp': 'inputKeyUp',
@@ -11,24 +9,26 @@ define('ui/controlbox/', function(require, exports, module) {
             'click .nick': 'showNickChange'
         },
 
-        initialize: function () {
+        initialize: function (options, Application, kiwi) {
             var that = this;
+            _kiwi = kiwi;
 
             this.buffer = [];  // Stores previously run commands
             this.buffer_pos = 0;  // The current position in the buffer
 
-            this.preprocessor = new utils.InputPreProcessor();
+            this.preprocessor = new InputPreProcessor();
             this.preprocessor.recursive_depth = 5;
 
-            this.autocomplete = new (require('ui/autocomplete/'))({el: this.$('.autocomplete')[0]});
+            this.autocomplete = new AutoComplete({el: this.$('.autocomplete')[0]});
             this.autocomplete_command_list = [];
             this.bindAutocomplete();
 
             // Keep the nick view updated with nick changes
             Application.instance().connections.on('change:nick', function(connection) {
                 // Only update the nick view if it's the active connection
-                if (connection !== Application.instance().connections.active_connection)
+                if (connection !== Application.instance().connections.active_connection) {
                     return;
+                }
 
                 $('.nick', that.$el).text(connection.get('nick'));
             });
@@ -40,7 +40,7 @@ define('ui/controlbox/', function(require, exports, module) {
         },
 
         render: function() {
-            var send_message_text = utils.translateText('client_views_controlbox_message');
+            var send_message_text = translator.translateText('client_views_controlbox_message');
             this.$('.inp').attr('placeholder', send_message_text);
 
             return this;
@@ -74,14 +74,15 @@ define('ui/controlbox/', function(require, exports, module) {
             var focus_after_close = true;
             this.listenTo(this.autocomplete, 'cancel', function(reason) {
                 var $inp = this.$('.inp'),
-                    inp = $inp[0],
                     inp_val = $inp.val(),
                     caret_pos = $inp.selectRange();
 
                 // If we hit space while typing a word, then take chars 0->caret_pos, remove rest of word, include rest of input value
                 if (reason === 'typing' || reason === 'lost_focus') {
                     var trailing_start_pos = inp_val.indexOf(' ', caret_pos);
-                    if (trailing_start_pos === -1 ) trailing_start_pos = inp_val.length;
+                    if (trailing_start_pos === -1 ) {
+                        trailing_start_pos = inp_val.length;
+                    }
                     $inp.val(inp_val.substr(0, caret_pos) + inp_val.substr(trailing_start_pos+1, inp_val.length));
                 } else {
                     $inp.val(this.autocomplete_before.value);
@@ -100,7 +101,9 @@ define('ui/controlbox/', function(require, exports, module) {
             });
 
             this.listenTo(this.autocomplete, 'close', function() {
-                if (focus_after_close) this.$('.inp').focus();
+                if (focus_after_close) {
+                    this.$('.inp').focus();
+                }
             });
 
             this.listenTo(this.autocomplete, 'action-message', function(nick) {
@@ -116,15 +119,15 @@ define('ui/controlbox/', function(require, exports, module) {
                     userbox,
                     are_we_an_op = !!members.getByNick(_kiwi.app.connections.active_connection.get('nick')).get('is_op');
 
-                userbox = new (require('ui/userbox/'))();
+                userbox = new UserBox();
                 userbox.setTargets(member, active_panel);
                 userbox.displayOpItems(are_we_an_op);
 
-                var menu = new (require('ui/menubox/'))(member.get('nick') || 'User');
+                var menu = new MenuBox(member.get('nick') || 'User');
                 menu.addItem('userbox', userbox.$el);
                 menu.showFooter(false);
 
-                _kiwi.global.events.emit('usermenu:created', {menu: menu, userbox: userbox, user: member})
+                events.emit('usermenu:created', {menu: menu, userbox: userbox, user: member})
                 .then(_.bind(function() {
                     menu.show();
 
@@ -152,7 +155,8 @@ define('ui/controlbox/', function(require, exports, module) {
         autoCompleteFillWord: function(word, place_cursor_after_word) {
             var $inp = this.$('.inp'),
                 inp_val = $inp.val(),
-                caret_pos = $inp[0].selectionStart;
+                caret_pos = $inp[0].selectionStart,
+                range;
 
             // If we have the trailing ': ' after nicks, we need to check further back to find
             // the start of the current word
@@ -161,7 +165,9 @@ define('ui/controlbox/', function(require, exports, module) {
             var word_start_pos = inp_val.lastIndexOf(' ', caret_pos - (trailing_found ? 2 : 1));
             word_start_pos = (word_start_pos === -1) ? 0 : word_start_pos + 1; // If no space found, start from 0. Otherwise, add 1 to include the space
             var word_end_pos = inp_val.indexOf(' ', word_start_pos);
-            if (word_end_pos === -1) word_end_pos = inp_val.length;
+            if (word_end_pos === -1) {
+                word_end_pos = inp_val.length;
+            }
 
             var start_of_inp = inp_val.substr(0, word_start_pos); // Get text before current selected word
             var rest_of_inp = inp_val.substr(word_end_pos); // Get text after current selected word
@@ -187,12 +193,13 @@ define('ui/controlbox/', function(require, exports, module) {
             }
         },
 
-        showNickChange: function (ev) {
+        showNickChange: function () {
             // Nick box already open? Don't do it again
-            if (this.nick_change)
+            if (this.nick_change) {
                 return;
+            }
 
-            this.nick_change = new (require('ui/nickchange/'))();
+            this.nick_change = new NickChange();
             this.nick_change.render();
 
             this.listenTo(this.nick_change, 'close', function() {
@@ -214,7 +221,10 @@ define('ui/controlbox/', function(require, exports, module) {
                 inp = $(ev.currentTarget),
                 inp_val = inp.val(),
                 meta,
-                $tabs, cur_tab_ind;
+                $tabs,
+                cur_tab_ind,
+                $prev_tab,
+                $next_tab;
 
             if (navigator.appVersion.indexOf("Mac") !== -1) {
                 meta = ev.metaKey;
@@ -238,7 +248,7 @@ define('ui/controlbox/', function(require, exports, module) {
                         try {
                             that.processInput(line);
                         } catch (err) {
-                            window.console && console.error(err);
+                            window.console && console.error(err); //jshint ignore:line
                         }
                     });
 
@@ -255,8 +265,6 @@ define('ui/controlbox/', function(require, exports, module) {
                 }
 
                 return false;
-
-                break;
 
             case (ev.keyCode === 38):              // up
                 if (this.buffer_pos > 0) {
@@ -278,8 +286,9 @@ define('ui/controlbox/', function(require, exports, module) {
                 $tabs = $('#kiwi .tabs').find('li[class!=connection]');
                 cur_tab_ind = (function() {
                     for (var idx=0; idx<$tabs.length; idx++){
-                        if ($($tabs[idx]).hasClass('active'))
+                        if ($($tabs[idx]).hasClass('active')) {
                             return idx;
+                        }
                     }
                 })();
 
@@ -298,8 +307,9 @@ define('ui/controlbox/', function(require, exports, module) {
                 $tabs = $('#kiwi .tabs').find('li[class!=connection]');
                 cur_tab_ind = (function() {
                     for (var idx=0; idx<$tabs.length; idx++){
-                        if ($($tabs[idx]).hasClass('active'))
+                        if ($($tabs[idx]).hasClass('active')) {
                             return idx;
+                        }
                     }
                 })();
 
@@ -327,7 +337,9 @@ define('ui/controlbox/', function(require, exports, module) {
 
                 if (members) {
                     members.forEach(function (member) {
-                        if (!member) return;
+                        if (!member) {
+                            return;
+                        }
                         autocomplete_list.push({match: [member.get('nick')], type: 'nick'});
                     });
                 }
@@ -374,7 +386,7 @@ define('ui/controlbox/', function(require, exports, module) {
         },
 
 
-        inputBlur: function(event) {
+        inputBlur: function() {
             // IE hack. Mouse down on auto complete UI sets cancel_blur so we don't loose
             // focus here.
             if (this.autocomplete.cancel_blur) {
@@ -388,8 +400,7 @@ define('ui/controlbox/', function(require, exports, module) {
 
         processInput: function (command_raw) {
             var that = this,
-                command, params, events_data,
-                pre_processed;
+                command, params, events_data;
 
             // If sending a message when not in a channel or query window, automatically
             // convert it into a command
@@ -426,7 +437,7 @@ define('ui/controlbox/', function(require, exports, module) {
             // Emit a plugin event for any modifications
             events_data = {command: command, params: params};
 
-            _kiwi.global.events.emit('command', events_data)
+            events.emit('command', events_data)
             .then(function() {
                 // Trigger the command events
                 that.trigger('command', {command: events_data.command, params: events_data.params});
@@ -451,7 +462,7 @@ define('ui/controlbox/', function(require, exports, module) {
                 caret_pos: $inp[0].selectionStart
             };
 
-            this.autocomplete.showUi(!!_kiwi.global.settings.get('show_autocomplete_slideout'));
+            this.autocomplete.showUi(!!settings.get('show_autocomplete_slideout'));
             this.autocomplete.setTitle(type);
             this.autocomplete.setWords(list, filter_list);
             this.autocomplete.update(tokens[tokens.length - 1]);

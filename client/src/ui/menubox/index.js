@@ -1,15 +1,10 @@
-define('ui/menubox/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/menubox', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         events: {
             'click .ui-menu-foot .close, a.close-menu': 'dispose'
         },
 
         initialize: function(title) {
-            var that = this;
-
             this.$el = $('<div class="ui-menu"><div class="items"></div></div>');
 
             this._title = title || '';
@@ -40,8 +35,9 @@ define('ui/menubox/', function(require, exports, module) {
                 $items.append($item);
             });
 
-            if (this._display_footer)
+            if (this._display_footer) {
                 this.$el.append('<div class="ui-menu-foot"><a class="close" onclick="">Close <i class="fa fa-times"></i></a></div>');
+            }
 
         },
 
@@ -49,8 +45,9 @@ define('ui/menubox/', function(require, exports, module) {
         setTitle: function(new_title) {
             this._title = new_title;
 
-            if (!this._title)
+            if (!this._title) {
                 return;
+            }
 
             this.$el.find('.ui-menu-title').text(this._title);
         },
@@ -59,31 +56,36 @@ define('ui/menubox/', function(require, exports, module) {
         onDocumentClick: function(event) {
             var $target = $(event.target);
 
-            if (!this._close_on_blur)
+            if (!this._close_on_blur) {
                 return;
+            }
 
             // If this is not itself AND we don't contain this element, dispose $el
-            if ($target[0] != this.$el[0] && this.$el.has($target).length === 0)
+            if ($target[0] !== this.$el[0] && this.$el.has($target).length === 0) {
                 this.dispose();
+            }
         },
 
 
         dispose: function() {
             _.each(this._items, function(item) {
-                item.dispose && item.dispose();
-                item.remove && item.remove();
+                item.dispose && item.dispose(); //jshint ignore:line
+                item.remove && item.remove(); //jshint ignore:line
             });
 
             this._items = null;
             this.remove();
 
-            if (this._close_proxy)
+            if (this._close_proxy) {
                 $(document).off('click', this._close_proxy);
+            }
         },
 
 
         addItem: function(item_name, $item) {
-            if ($item.is('a')) $item.addClass('fa fa-chevron-right');
+            if ($item.is('a')) {
+                $item.addClass('fa fa-chevron-right');
+            }
             this._items[item_name] = $item;
         },
 
@@ -105,7 +107,7 @@ define('ui/menubox/', function(require, exports, module) {
 
         show: function() {
             var that = this,
-                $controlbox, menu_height;
+                $controlbox, $items, menu_height;
 
             this.render();
             this.$el.appendTo(Application.instance().view.$el);

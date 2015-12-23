@@ -1,8 +1,5 @@
-define('ui/application/view', function(require, exports, module) {
-
-    var utils = require('helpers/utils');
-    
-    module.exports = Backbone.View.extend({
+define('ui/application/view', ['lib/backbone', 'ui/favicon', 'ui/notification', 'helpers/translator', 'helpers/settings', 'misc/gateway'], function (Backbone, Favicon, notifications, translator, settings, Gateway) {
+    return Backbone.View.extend({
         initialize: function () {
             var that = this;
 
@@ -24,14 +21,14 @@ define('ui/application/view', function(require, exports, module) {
             this.elements.controlbox.resize(function() { that.doLayout.apply(that); });
 
             // Change the theme when the config is changed
-            _kiwi.global.settings.on('change:theme', this.updateTheme, this);
+            settings.on('change:theme', this.updateTheme, this);
             this.updateTheme(getQueryVariable('theme'));
 
-            _kiwi.global.settings.on('change:channel_list_style', this.setTabLayout, this);
-            this.setTabLayout(_kiwi.global.settings.get('channel_list_style'));
+            settings.on('change:channel_list_style', this.setTabLayout, this);
+            this.setTabLayout(settings.get('channel_list_style'));
 
-            _kiwi.global.settings.on('change:show_timestamps', this.displayTimestamps, this);
-            this.displayTimestamps(_kiwi.global.settings.get('show_timestamps'));
+            settings.on('change:show_timestamps', this.displayTimestamps, this);
+            this.displayTimestamps(settings.get('show_timestamps'));
 
             this.$el.appendTo($('body'));
             this.doLayout();
@@ -40,8 +37,8 @@ define('ui/application/view', function(require, exports, module) {
 
             // Confirmation require to leave the page
             window.onbeforeunload = function () {
-                if (_kiwi.gateway.isConnected()) {
-                    return utils.translateText('client_views_application_close_notice');
+                if (Gateway.instance().isConnected()) {
+                    return translator.translateText('client_views_application_close_notice');
                 }
             };
 
@@ -68,7 +65,7 @@ define('ui/application/view', function(require, exports, module) {
             });
 
 
-            this.favicon = new (require('ui/favicon/'))();
+            this.favicon = new Favicon();
             this.initSound();
 
             this.monitorPanelFallback();
@@ -78,12 +75,14 @@ define('ui/application/view', function(require, exports, module) {
 
         updateTheme: function (theme_name) {
             // If called by the settings callback, get the correct new_value
-            if (theme_name === _kiwi.global.settings) {
+            if (theme_name === settings) {
                 theme_name = arguments[1];
             }
 
             // If we have no theme specified, get it from the settings
-            if (!theme_name) theme_name = _kiwi.global.settings.get('theme') || 'relaxed';
+            if (!theme_name) {
+                theme_name = settings.get('theme') || 'relaxed';
+            }
 
             theme_name = theme_name.toLowerCase();
 
@@ -113,11 +112,11 @@ define('ui/application/view', function(require, exports, module) {
 
         setTabLayout: function (layout_style) {
             // If called by the settings callback, get the correct new_value
-            if (layout_style === _kiwi.global.settings) {
+            if (layout_style === settings) {
                 layout_style = arguments[1];
             }
 
-            if (layout_style == 'list') {
+            if (layout_style === 'list') {
                 this.$el.addClass('chanlist-treeview');
             } else {
                 this.$el.removeClass('chanlist-treeview');
@@ -129,7 +128,7 @@ define('ui/application/view', function(require, exports, module) {
 
         displayTimestamps: function (show_timestamps) {
             // If called by the settings callback, get the correct new_value
-            if (show_timestamps === _kiwi.global.settings) {
+            if (show_timestamps === settings) {
                 show_timestamps = arguments[1];
             }
 
@@ -202,12 +201,14 @@ define('ui/application/view', function(require, exports, module) {
             // Determine if we have a narrow window (mobile/tablet/or even small desktop window)
             if ($kiwi.outerWidth() < 700) {
                 $kiwi.addClass('narrow');
-                if (this.model.rightbar && this.model.rightbar.keep_hidden !== true)
+                if (this.model.rightbar && this.model.rightbar.keep_hidden !== true) {
                     this.model.rightbar.toggle(true);
+                }
             } else {
                 $kiwi.removeClass('narrow');
-                if (this.model.rightbar && this.model.rightbar.keep_hidden !== false)
+                if (this.model.rightbar && this.model.rightbar.keep_hidden !== false) {
                     this.model.rightbar.toggle(false);
+                }
             }
 
             // Set the panels width depending on the memberlist visibility
@@ -248,16 +249,22 @@ define('ui/application/view', function(require, exports, module) {
 
                     that.start = function (new_title) {
                         // Don't alert if we already have focus
-                        if (has_focus) return;
+                        if (has_focus) {
+                            return;
+                        }
 
                         title = new_title;
-                        if (tmr) return;
+                        if (tmr) {
+                            return;
+                        }
                         tmr = setInterval(that.update, 1000);
                     };
 
                     that.stop = function () {
                         // Stop the timer and clear the title
-                        if (tmr) clearInterval(tmr);
+                        if (tmr) {
+                            clearInterval(tmr);
+                        }
                         tmr = null;
                         that.setTitle();
 
@@ -267,7 +274,9 @@ define('ui/application/view', function(require, exports, module) {
                     };
 
                     that.reset = function () {
-                        if (tmr) return;
+                        if (tmr) {
+                            return;
+                        }
                         that.setTitle();
                     };
 
@@ -282,7 +291,7 @@ define('ui/application/view', function(require, exports, module) {
                         }
                     };
 
-                    $(window).focus(function (event) {
+                    $(window).focus(function () {
                         has_focus = true;
                         that.stop();
 
@@ -291,7 +300,7 @@ define('ui/application/view', function(require, exports, module) {
                         setTimeout(that.reset, 2000);
                     });
 
-                    $(window).blur(function (event) {
+                    $(window).blur(function () {
                         has_focus = false;
                     });
 
@@ -304,9 +313,7 @@ define('ui/application/view', function(require, exports, module) {
 
 
         barsHide: function (instant) {
-            var that = this;
-
-            if (!instant) {
+           if (!instant) {
                 this.$el.find('.toolbar').slideUp({queue: false, duration: 400, step: $.proxy(this.doLayout, this)});
                 $('#kiwi .controlbox').slideUp({queue: false, duration: 400, step: $.proxy(this.doLayout, this)});
             } else {
@@ -317,8 +324,6 @@ define('ui/application/view', function(require, exports, module) {
         },
 
         barsShow: function (instant) {
-            var that = this;
-
             if (!instant) {
                 this.$el.find('.toolbar').slideDown({queue: false, duration: 400, step: $.proxy(this.doLayout, this)});
                 $('#kiwi .controlbox').slideDown({queue: false, duration: 400, step: $.proxy(this.doLayout, this)});
@@ -335,8 +340,9 @@ define('ui/application/view', function(require, exports, module) {
                 base_path = this.model.get('base_path');
 
             $script(base_path + '/assets/libs/soundmanager2/soundmanager2-nodebug-jsmin.js', function() {
-                if (typeof soundManager === 'undefined')
+                if (typeof soundManager === 'undefined') {
                     return;
+                }
 
                 soundManager.setup({
                     url: base_path + '/assets/libs/soundmanager2/',
@@ -355,18 +361,20 @@ define('ui/application/view', function(require, exports, module) {
 
 
         playSound: function (sound_id) {
-            if (!this.sound_object) return;
-
-            if (_kiwi.global.settings.get('mute_sounds'))
+            if (!this.sound_object) {
                 return;
+            }
+
+            if (settings.get('mute_sounds')) {
+                return;
+            }
 
             soundManager.play(sound_id);
         },
 
 
         showNotification: function(title, message) {
-            var icon = this.model.get('base_path') + '/assets/img/ico.png',
-                notifications = require('utils/notifications');
+            var icon = this.model.get('base_path') + '/assets/img/ico.png';
 
             if (!this.has_focus && notifications.allowed()) {
                 notifications

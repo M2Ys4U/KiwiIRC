@@ -1,9 +1,5 @@
-define('ui/newconnection/view', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/newconnection/view', ['lib/backbone', 'ui/application', 'helpers/translator', 'components', 'misc/gateway'], function (Backbone, Application, translator, components, Gateway) {
+    Backbone.View.extend({
         events: {
             'submit form': 'submitForm',
             'click .show-more': 'showMore',
@@ -14,21 +10,20 @@ define('ui/newconnection/view', function(require, exports, module) {
         },
 
         initialize: function () {
-            var that = this,
-                text = {
-                    think_nick: utils.translateText('client_views_serverselect_form_title'),
-                    nickname: utils.translateText('client_views_serverselect_nickname'),
-                    have_password: utils.translateText('client_views_serverselect_enable_password'),
-                    password: utils.translateText('client_views_serverselect_password'),
-                    channel: utils.translateText('client_views_serverselect_channel'),
-                    channel_key: utils.translateText('client_views_serverselect_channelkey'),
-                    require_key: utils.translateText('client_views_serverselect_channelkey_required'),
-                    key: utils.translateText('client_views_serverselect_key'),
-                    start: utils.translateText('client_views_serverselect_connection_start'),
-                    server_network: utils.translateText('client_views_serverselect_server_and_network'),
-                    server: utils.translateText('client_views_serverselect_server'),
-                    port: utils.translateText('client_views_serverselect_port'),
-                    powered_by: utils.translateText('client_views_serverselect_poweredby')
+            var text = {
+                    think_nick: translator.translateText('client_views_serverselect_form_title'),
+                    nickname: translator.translateText('client_views_serverselect_nickname'),
+                    have_password: translator.translateText('client_views_serverselect_enable_password'),
+                    password: translator.translateText('client_views_serverselect_password'),
+                    channel: translator.translateText('client_views_serverselect_channel'),
+                    channel_key: translator.translateText('client_views_serverselect_channelkey'),
+                    require_key: translator.translateText('client_views_serverselect_channelkey_required'),
+                    key: translator.translateText('client_views_serverselect_key'),
+                    start: translator.translateText('client_views_serverselect_connection_start'),
+                    server_network: translator.translateText('client_views_serverselect_server_and_network'),
+                    server: translator.translateText('client_views_serverselect_server'),
+                    port: translator.translateText('client_views_serverselect_port'),
+                    powered_by: translator.translateText('client_views_serverselect_poweredby')
                 };
 
             this.$el = $(_.template($('#tmpl_server_select').html().trim())(text));
@@ -48,7 +43,7 @@ define('ui/newconnection/view', function(require, exports, module) {
 
             this.model.bind('new_network', this.newNetwork, this);
 
-            this.gateway = _kiwi.global.components.Network();
+            this.gateway = components.Network();
             this.gateway.on('connect', this.networkConnected, this);
             this.gateway.on('connecting', this.networkConnecting, this);
             this.gateway.on('disconnect', this.networkDisconnected, this);
@@ -67,7 +62,7 @@ define('ui/newconnection/view', function(require, exports, module) {
 
             // Make sure a nick is chosen
             if (!$('input.nick', this.$el).val().trim()) {
-                this.setStatus(utils.translateText('client_views_serverselect_nickname_error_empty'));
+                this.setStatus(translator.translateText('client_views_serverselect_nickname_error_empty'));
                 $('input.nick', this.$el).select();
                 return;
             }
@@ -82,9 +77,11 @@ define('ui/newconnection/view', function(require, exports, module) {
             return;
         },
 
-        submitLogin: function (event) {
+        submitLogin: function () {
             // If submitting is disabled, don't do anything
-            if ($('button', this.$el).attr('disabled')) return;
+            if ($('button', this.$el).attr('disabled')) {
+                return;
+            }
 
             var values = {
                 nick: $('input.nick', this.$el).val(),
@@ -100,12 +97,12 @@ define('ui/newconnection/view', function(require, exports, module) {
             this.trigger('server_connect', values);
         },
 
-        submitNickChange: function (event) {
-            _kiwi.gateway.changeNick(null, $('input.nick', this.$el).val());
+        submitNickChange: function () {
+            Gateway.instance().changeNick(null, $('input.nick', this.$el).val());
             this.networkConnecting();
         },
 
-        showPass: function (event) {
+        showPass: function () {
             if (this.$el.find('tr.have-pass input').is(':checked')) {
                 this.$el.find('tr.pass').show().find('input').focus();
             } else {
@@ -113,11 +110,11 @@ define('ui/newconnection/view', function(require, exports, module) {
             }
         },
 
-        channelKeyIconClick: function (event) {
+        channelKeyIconClick: function () {
             this.$el.find('tr.have-key input').click();
         },
 
-        showKey: function (event) {
+        showKey: function () {
             if (this.$el.find('tr.have-key input').is(':checked')) {
                 this.$el.find('tr.key').show().find('input').focus();
             } else {
@@ -125,7 +122,7 @@ define('ui/newconnection/view', function(require, exports, module) {
             }
         },
 
-        showMore: function (event) {
+        showMore: function () {
             if (!this.more_shown) {
                 $('.more', this.$el).slideDown('fast');
                 $('.show_more', this.$el)
@@ -177,8 +174,9 @@ define('ui/newconnection/view', function(require, exports, module) {
             // Temporary values
             this.server_options = {};
 
-            if (defaults.encoding)
+            if (defaults.encoding) {
                 this.server_options.encoding = defaults.encoding;
+            }
         },
 
         hide: function () {
@@ -215,8 +213,9 @@ define('ui/newconnection/view', function(require, exports, module) {
 
             // Some theme may hide the info panel so check before we
             // resize ourselves
-            if (!$side_panel.is(':visible'))
+            if (!$side_panel.is(':visible')) {
                 return;
+            }
 
             this.$el.animate({
                 width: parseInt($side_panel.css('left'), 10) + $side_panel.find('.content:first').outerWidth()
@@ -269,17 +268,18 @@ define('ui/newconnection/view', function(require, exports, module) {
             this.state = 'all';
         },
 
-        networkConnecting: function (event) {
+        networkConnecting: function () {
             this.model.trigger('connecting');
-            this.setStatus(utils.translateText('client_views_serverselect_connection_trying'), 'ok');
+            this.setStatus(translator.translateText('client_views_serverselect_connection_trying'), 'ok');
 
             this.$('.status').append('<a class="show-server"><i class="fa fa-info-circle"></i></a>');
         },
 
         showServer: function() {
             // If we don't have a current connection in the making then we have nothing to show
-            if (!this.model.current_connecting_network)
+            if (!this.model.current_connecting_network) {
                 return;
+            }
 
             Application.instance().view.barsShow();
             this.model.current_connecting_network.panels.server.view.show();
@@ -290,7 +290,7 @@ define('ui/newconnection/view', function(require, exports, module) {
 
             switch(data.error) {
             case 'nickname_in_use':
-                this.setStatus(utils.translateText('client_views_serverselect_nickname_error_alreadyinuse'));
+                this.setStatus(translator.translateText('client_views_serverselect_nickname_error_alreadyinuse'));
                 this.show('nick_change');
                 this.$el.find('.nick').select();
                 break;
@@ -298,13 +298,13 @@ define('ui/newconnection/view', function(require, exports, module) {
                 if (data.reason) {
                     this.setStatus(data.reason);
                 } else {
-                    this.setStatus(utils.translateText('client_views_serverselect_nickname_invalid'));
+                    this.setStatus(translator.translateText('client_views_serverselect_nickname_invalid'));
                 }
                 this.show('nick_change');
                 this.$el.find('.nick').select();
                 break;
             case 'password_mismatch':
-                this.setStatus(utils.translateText('client_views_serverselect_password_incorrect'));
+                this.setStatus(translator.translateText('client_views_serverselect_password_incorrect'));
                 this.show('enter_password');
                 this.$el.find('.password').select();
                 break;
@@ -315,16 +315,16 @@ define('ui/newconnection/view', function(require, exports, module) {
         },
 
         showError: function (error_reason) {
-            var err_text = utils.translateText('client_views_serverselect_connection_error');
+            var err_text = translator.translateText('client_views_serverselect_connection_error');
 
             if (error_reason) {
                 switch (error_reason) {
                 case 'ENOTFOUND':
-                    err_text = utils.translateText('client_views_serverselect_server_notfound');
+                    err_text = translator.translateText('client_views_serverselect_server_notfound');
                     break;
 
                 case 'ECONNREFUSED':
-                    err_text += ' (' + utils.translateText('client_views_serverselect_connection_refused') + ')';
+                    err_text += ' (' + translator.translateText('client_views_serverselect_connection_refused') + ')';
                     break;
 
                 default:

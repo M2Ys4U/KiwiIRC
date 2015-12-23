@@ -1,12 +1,9 @@
-define('ui/panels/applet', function(require, exports, module) {
-    
-    var utils = require('helpers/utils');
-
-    module.exports = require('./panel').extend({
-        initialize: function (attributes) {
+define('ui/panels/applet', ['ui/application','helpers/translator', 'ui/panels/panel', 'ui/panels/applet_view'], function (Application, translator, Panel, AppletView) {
+    var Applet = Panel.extend({
+        initialize: function () {
             // Temporary name
             var name = "applet_"+(new Date().getTime().toString()) + Math.ceil(Math.random()*100).toString();
-            this.view = new (require('./applet_view'))({model: this, name: name});
+            this.view = new AppletView({model: this, name: name});
 
             this.set({
                 "name": name
@@ -24,7 +21,7 @@ define('ui/panels/applet', function(require, exports, module) {
                 if (applet_object.get || applet_object.extend) {
 
                     // Try find a title for the applet
-                    this.set('title', applet_object.get('title') || utils.translateText('client_models_applet_unknown'));
+                    this.set('title', applet_object.get('title') || translator.translateText('client_models_applet_unknown'));
 
                     // Update the tabs title if the applet changes it
                     applet_object.bind('change:title', function (obj, new_value) {
@@ -55,11 +52,11 @@ define('ui/panels/applet', function(require, exports, module) {
         loadFromUrl: function(applet_url, applet_name) {
             var that = this;
 
-            this.view.$el.html(utils.translateText('client_models_applet_loading'));
+            this.view.$el.html(translator.translateText('client_models_applet_loading'));
             $script(applet_url, function () {
                 // Check if the applet loaded OK
                 if (!_kiwi.applets[applet_name]) {
-                    that.view.$el.html(utils.translateText('client_models_applet_notfound'));
+                    that.view.$el.html(translator.translateText('client_models_applet_notfound'));
                     return;
                 }
 
@@ -93,22 +90,28 @@ define('ui/panels/applet', function(require, exports, module) {
     {
         // Load an applet type once only. If it already exists, return that
         loadOnce: function (applet_name) {
-            var application = require('ui/application/').instance();
+            var application = Application.instance();
 
             // See if we have an instance loaded already
             var applet = _.find(application.panels('applets'), function(panel) {
                 // Ignore if it's not an applet
-                if (!panel.isApplet()) return;
+                if (!panel.isApplet()) {
+                    return;
+                }
 
                 // Ignore if it doesn't have an applet loaded
-                if (!panel.loaded_applet) return;
+                if (!panel.loaded_applet) {
+                    return;
+                }
 
                 if (panel.loaded_applet.get('_applet_name') === applet_name) {
                     return true;
                 }
             });
 
-            if (applet) return applet;
+            if (applet) {
+                return applet;
+            }
 
 
             // If we didn't find an instance, load a new one up
@@ -117,23 +120,25 @@ define('ui/panels/applet', function(require, exports, module) {
 
 
         load: function (applet_name, options) {
-            var application = require('ui/application/').instance(),
-                applet, applet_obj;
+            var application = Application.instance(),
+                applet, Applet_obj;
 
             options = options || {};
 
-            applet_obj = this.getApplet(applet_name);
+            Applet_obj = this.getApplet(applet_name);
 
-            if (!applet_obj)
+            if (Applet_obj) {
                 return;
+            }
 
             // Create the applet and load the content
-            applet = new (require('./applet'))();
-            applet.load(new applet_obj({_applet_name: applet_name}));
+            applet = new Applet();
+            applet.load(new Applet_obj({_applet_name: applet_name}));
 
             // Add it into the tab list if needed (default)
-            if (!options.no_tab)
+            if (!options.no_tab) {
                 application.applet_panels.add(applet);
+            }
 
 
             return applet;
@@ -149,4 +154,6 @@ define('ui/panels/applet', function(require, exports, module) {
             _kiwi.applets[applet_name] = applet;
         }
     });
+
+    return Applet;
 });

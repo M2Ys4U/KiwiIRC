@@ -1,16 +1,13 @@
-define('utils/notifications', function(require, exports, module) {
-
+define('utils/notifications', [], function () {
     if (!window.Notification) {
-        module.exports = {
+        return {
             allowed: _.constant(false),
             requestPermission: _.constant($.Deferred().reject())
         };
-
-        return;
     }
 
 
-    var notifications = module.exports = {
+    var notifications = {
         /**
          * Check if desktop notifications have been allowed by the user.
          *
@@ -126,4 +123,5 @@ define('utils/notifications', function(require, exports, module) {
         }
     }
 
+    return notifications;
 });

@@ -1,5 +1,5 @@
-define('misc/datastore', function(require, exports, module) {
-	module.exports = Backbone.Model.extend({
+define('misc/datastore', ['lib/backbone'], function (Backbone) {
+	var DataStore = Backbone.Model.extend({
 		initialize: function () {
 			this._namespace = '';
 			this.new_data = {};
@@ -7,7 +7,9 @@ define('misc/datastore', function(require, exports, module) {
 		},
 
 		namespace: function (new_namespace) {
-			if (new_namespace) this._namespace = new_namespace;
+			if (new_namespace) {
+				this._namespace = new_namespace;
+			}
 			return this._namespace;
 		},
 
@@ -27,7 +29,9 @@ define('misc/datastore', function(require, exports, module) {
 
 		// Overload the original load() method
 		load: function () {
-			if (!localStorage) return;
+			if (!localStorage) {
+				return;
+			}
 
 			var raw, data, stored_data;
 
@@ -48,10 +52,12 @@ define('misc/datastore', function(require, exports, module) {
 	{
 		// Generates a new instance of DataStore with a set namespace
 		instance: function (namespace, attributes) {
-			var ds = require('./datastore');
-			var datastore = new ds(attributes);
+			var datastore = new DataStore(attributes);
 			datastore.namespace(namespace);
 			return datastore;
 		}
 	});
+
+	return DataStore;
+
 });

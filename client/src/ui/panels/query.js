@@ -1,10 +1,10 @@
-define('ui/panels/query', function(require, exports, module) {
-    module.exports = require('./channel').extend({
-        initialize: function (attributes) {
+define('ui/panels/query', ['ui/panels/channel', 'ui/messagelist', 'ui/panels/channel_view', 'helpers/events'], function (Channel, MessageList, ChannelView, events) {
+    return Channel.extend({
+        initialize: function () {
             var name = this.get("name") || "",
-                members, messages;
+                messages;
 
-            messages = new (require('ui/messagelist/'))({
+            messages = new MessageList({
                 network: this.get('network')   // Enables clicking on channels
             });
 
@@ -13,9 +13,9 @@ define('ui/panels/query', function(require, exports, module) {
                 "messages": messages
             }, {"silent": true});
 
-            this.view = new (require('./channel_view'))({"model": this, "name": name});
+            this.view = new ChannelView({"model": this, "name": name});
 
-            _kiwi.global.events.emit('panel:created', {panel: this});
+            events.emit('panel:created', {panel: this});
         },
 
         isChannel: function () {

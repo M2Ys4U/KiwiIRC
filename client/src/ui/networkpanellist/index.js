@@ -1,9 +1,11 @@
-define('ui/networkpanellist/', function(require, exports, module) {
-    module.exports = Backbone.Collection.extend({
-        model: require('misc/network'),
+define('ui/networkpanellist', ['lib/backbone', 'misc/network', 'ui/networkpanellist/tabs'], function (Backbone, Network, tabs) {
+    var Tabs;
+    return Backbone.Collection.extend({
+        model: Network,
 
-        initialize: function() {
-            this.view = new (require('./tabs'))({model: this});
+        initialize: function(_, _, Application) { //jshint ignore:line
+            Tabs = tabs.init(Application);
+            this.view = new Tabs({model: this});
 
             this.on('add', this.onNetworkAdd, this);
             this.on('remove', this.onNetworkRemove, this);
@@ -18,7 +20,7 @@ define('ui/networkpanellist/', function(require, exports, module) {
 
         getByConnectionId: function(id) {
             return this.find(function(connection){
-                return connection.get('connection_id') == id;
+                return connection.get('connection_id') === id;
             });
         },
 

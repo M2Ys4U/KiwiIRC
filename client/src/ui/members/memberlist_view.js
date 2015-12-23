@@ -1,9 +1,5 @@
-define('ui/members/memberlist_view', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/members/memberlist_view', ['lib/backbone', 'ui/application', 'ui/userbox', 'ui/menubox', 'ui/channelinfo', 'helpers/translator', 'helpers/events'], function (Backbone, Application, UserBox, MenuBox, ChannelInfo, translator, events) {
+    return Backbone.View.extend({
         tagName: "div",
         events: {
             "click .nick": "nickClick",
@@ -12,7 +8,7 @@ define('ui/members/memberlist_view', function(require, exports, module) {
             "click .channel-info": "channelInfoClick"
         },
 
-        initialize: function (options) {
+        initialize: function () {
             this.model.bind('all', this.render, this);
             this.$el.appendTo('#kiwi .memberlists');
 
@@ -40,7 +36,7 @@ define('ui/members/memberlist_view', function(require, exports, module) {
         },
 
         renderMeta: function() {
-            var members_count = this.model.length + ' ' + utils.translateText('client_applets_chanlist_users');
+            var members_count = this.model.length + ' ' + translator.translateText('client_applets_chanlist_users');
             this.$meta.text(members_count);
         },
 
@@ -48,7 +44,7 @@ define('ui/members/memberlist_view', function(require, exports, module) {
             var $target = $(event.currentTarget).parent('li'),
                 member = $target.data('member');
 
-            _kiwi.global.events.emit('nick:select', {
+            events.emit('nick:select', {
                 target: $target,
                 member: member,
                 network: this.model.channel.get('network'),
@@ -65,15 +61,15 @@ define('ui/members/memberlist_view', function(require, exports, module) {
                 userbox,
                 are_we_an_op = !!this.model.getByNick(Application.instance().connections.active_connection.get('nick')).get('is_op');
 
-            userbox = new (require('ui/userbox/'))();
+            userbox = new UserBox();
             userbox.setTargets(member, this.model.channel);
             userbox.displayOpItems(are_we_an_op);
 
-            var menu = new (require('ui/menubox/'))(member.get('nick') || 'User');
+            var menu = new MenuBox(member.get('nick') || 'User');
             menu.addItem('userbox', userbox.$el);
             menu.showFooter(false);
 
-            _kiwi.global.events.emit('usermenu:created', {menu: menu, userbox: userbox, user: member})
+            events.emit('usermenu:created', {menu: menu, userbox: userbox, user: member})
             .then(_.bind(function() {
                 menu.show();
 
@@ -116,8 +112,8 @@ define('ui/members/memberlist_view', function(require, exports, module) {
         },
 
 
-        channelInfoClick: function(event) {
-            new (require('ui/channelinfo/'))({channel: this.model.channel});
+        channelInfoClick: function() {
+            return new ChannelInfo({channel: this.model.channel});
         },
 
 

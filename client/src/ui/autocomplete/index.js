@@ -1,8 +1,5 @@
-define('ui/autocomplete/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/autocomplete', ['lib/lodash', 'lib/backbone'], function (_, Backbone) {
+    return Backbone.View.extend({
         events: {
             'click .autocomplete-item': 'onItemClick',
             'mousemove .autocomplete-item': 'onItemMouseMove',
@@ -74,8 +71,8 @@ define('ui/autocomplete/', function(require, exports, module) {
                 };
 
                 new_list.push(list_entry);
-                $el && $el.data('word', list_entry);
-                $el && $el.appendTo(this.$list);
+                $el && $el.data('word', list_entry); //jshint ignore:line
+                $el && $el.appendTo(this.$list); //jshint ignore:line
             }, this);
 
             this.list = new_list;
@@ -153,7 +150,7 @@ define('ui/autocomplete/', function(require, exports, module) {
 
         close: function() {
             this.open = false;
-            this._show_ui && this.$el.hide();
+            this._show_ui && this.$el.hide(); //jshint ignore:line
             this.reset();
             this.trigger('close');
         },
@@ -161,7 +158,7 @@ define('ui/autocomplete/', function(require, exports, module) {
 
         reset: function() {
             this.matching_against_word = null;
-            this._show_ui && this.$list.empty();
+            this._show_ui && this.$list.empty(); //jshint ignore:line
             this.list = [];
             this.matches = [];
             this.selected_idx = 0;
@@ -183,13 +180,15 @@ define('ui/autocomplete/', function(require, exports, module) {
 
         onItemClick: function(event) {
             var el_data = $(event.currentTarget).data('word');
-            if (!el_data) return;
+            if (!el_data) {
+                return;
+            }
             this.trigger('match', el_data.matched_word, el_data);
         },
 
 
         onItemMouseMove: function(event) {
-            $this = $(event.currentTarget);
+            var $this = $(event.currentTarget);
 
             // No need to re-add the class if it already has it
             if ($this.hasClass('selected')) {
@@ -251,7 +250,9 @@ define('ui/autocomplete/', function(require, exports, module) {
         selectEl: function($el, scroll_in_view) {
             var el, this_height;
 
-            if (!this._show_ui) return;
+            if (!this._show_ui) {
+                return;
+            }
 
             this.$('.selected').removeClass('selected');
             if ($el) {
@@ -281,15 +282,15 @@ define('ui/autocomplete/', function(require, exports, module) {
 
 
         onKeyDown: function(event) {
-            if (!this.open) return;
+            if (!this.open) {
+                return;
+            }
 
             var $inp = $(event.currentTarget);
             var dont_process_other_input_keys = false;
 
             // Handling input box caret positioning
-            var caret_pos = $inp[0].selectionStart,
-                new_position = 0,
-                text_range;
+            var caret_pos = $inp[0].selectionStart;
 
             if (event.keyCode === 38 || (event.keyCode === 9 && event.shiftKey)) { // up or tab+shift
                 this.previous();

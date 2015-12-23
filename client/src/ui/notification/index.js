@@ -1,8 +1,5 @@
-define('ui/notification/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/notification', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         className: 'notification',
 
         events: {

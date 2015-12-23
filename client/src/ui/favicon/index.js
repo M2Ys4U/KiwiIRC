@@ -1,5 +1,5 @@
-define('ui/favicon/', function(require, exports, module) {
-    module.exports = Backbone.View.extend({
+define('ui/favicon', ['lib/backbone'], function (Backbone) {
+    return Backbone.View.extend({
         initialize: function () {
             var that = this,
                 $win = $(window);
@@ -39,14 +39,12 @@ define('ui/favicon/', function(require, exports, module) {
         },
 
         _resetHighlights: function () {
-            var that = this;
             this.highlight_count = 0;
             this._refreshFavicon(this.original_favicon);
         },
 
         _drawFavicon: function (callback) {
-            var that = this,
-                canvas = this.canvas,
+            var canvas = this.canvas,
                 context = canvas.getContext('2d'),
                 favicon_image = new Image();
 
@@ -71,7 +69,8 @@ define('ui/favicon/', function(require, exports, module) {
                 context = canvas.getContext('2d'),
                 test_context = context,
                 canvas_width = canvas.width,
-                canvas_height = canvas.height;
+                canvas_height = canvas.height,
+                bubbleX, bubbleY;
 
             // Different letter spacing for MacOS
             if (navigator.appVersion.indexOf("Mac") !== -1) {

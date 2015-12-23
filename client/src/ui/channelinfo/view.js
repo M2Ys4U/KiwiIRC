@@ -1,10 +1,5 @@
-// var f = new (require('ui/channelinfo/'))({channel: Application.instance().panels().active});
-define('ui/channelinfo/view', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-    var utils = require('helpers/utils');
-
-    module.exports = Backbone.View.extend({
+define('ui/channelinfo/view', ['lib/backbone', 'ui/application', 'ui/menubox', 'helpers/formatdate', 'helpers/translator'], function (Backbone, Application, MenuBox, formatdate, translator) {
+    return Backbone.View.extend({
         events: {
             'click .toggle-banlist': 'toggleBanList',
             'change .channel-mode': 'onModeChange',
@@ -13,24 +8,22 @@ define('ui/channelinfo/view', function(require, exports, module) {
 
 
         initialize: function () {
-            var that = this,
-                network,
-                channel = this.model.get('channel'),
+            var channel = this.model.get('channel'),
                 text;
 
             text = {
-                moderated_chat: utils.translateText('client_views_channelinfo_moderated'),
-                invite_only: utils.translateText('client_views_channelinfo_inviteonly'),
-                ops_change_topic: utils.translateText('client_views_channelinfo_opschangechannel'),
-                external_messages: utils.translateText('client_views_channelinfo_externalmessages'),
-                toggle_banlist: utils.translateText('client_views_channelinfo_togglebanlist'),
+                moderated_chat: translator.translateText('client_views_channelinfo_moderated'),
+                invite_only: translator.translateText('client_views_channelinfo_inviteonly'),
+                ops_change_topic: translator.translateText('client_views_channelinfo_opschangechannel'),
+                external_messages: translator.translateText('client_views_channelinfo_externalmessages'),
+                toggle_banlist: translator.translateText('client_views_channelinfo_togglebanlist'),
                 channel_name: channel.get('name')
             };
 
             this.$el = $(_.template($('#tmpl_channel_info').html().trim())(text));
 
             // Create the menu box this view will sit inside
-            this.menu = new (require('ui/menubox/'))(channel.get('name'));
+            this.menu = new MenuBox(channel.get('name'));
             this.menu.addItem('channel_info', this.$el);
             this.menu.$el.appendTo(channel.view.$container);
             this.menu.show();
@@ -59,7 +52,7 @@ define('ui/channelinfo/view', function(require, exports, module) {
                 mode = $this.data('mode'),
                 mode_string = '';
 
-            if ($this.attr('type') == 'checkbox') {
+            if ($this.attr('type') === 'checkbox') {
                 mode_string = $this.is(':checked') ? '+' : '-';
                 mode_string += mode;
                 channel.setMode(mode_string);
@@ -67,7 +60,7 @@ define('ui/channelinfo/view', function(require, exports, module) {
                 return;
             }
 
-            if ($this.attr('type') == 'text') {
+            if ($this.attr('type') === 'text') {
                 mode_string = $this.val() ?
                     '+' + mode + ' ' + $this.val() :
                     '-' + mode;
@@ -87,8 +80,9 @@ define('ui/channelinfo/view', function(require, exports, module) {
                 $tr = $this.parents('tr:first'),
                 ban = $tr.data('ban');
 
-            if (!ban)
+            if (!ban) {
                 return;
+            }
 
             var channel = this.model.get('channel');
             channel.setMode('-b ' + ban.banned);
@@ -97,24 +91,24 @@ define('ui/channelinfo/view', function(require, exports, module) {
         },
 
 
-        updateInfo: function (channel, new_val) {
+        updateInfo: function (channel) {
             var that = this,
-                title, modes, url, banlist;
+                modes, url, banlist;
 
             modes = channel.get('info_modes');
             if (modes) {
-                _.each(modes, function(mode, idx) {
+                _.each(modes, function(mode) {
                     mode.mode = mode.mode.toLowerCase();
 
-                    if (mode.mode == '+k') {
+                    if (mode.mode === '+k') {
                         that.$el.find('[name="channel_key"]').val(mode.param);
-                    } else if (mode.mode == '+m') {
+                    } else if (mode.mode === '+m') {
                         that.$el.find('[name="channel_mute"]').attr('checked', 'checked');
-                    } else if (mode.mode == '+i') {
+                    } else if (mode.mode === '+i') {
                         that.$el.find('[name="channel_invite"]').attr('checked', 'checked');
-                    } else if (mode.mode == '+n') {
+                    } else if (mode.mode === '+n') {
                         that.$el.find('[name="channel_external_messages"]').attr('checked', 'checked');
-                    } else if (mode.mode == '+t') {
+                    } else if (mode.mode === '+t') {
                         that.$el.find('[name="channel_topic"]').attr('checked', 'checked');
                     }
                 });
@@ -141,7 +135,7 @@ define('ui/channelinfo/view', function(require, exports, module) {
 
                     $('<td></td>').text(ban.banned).appendTo($tr);
                     $('<td></td>').text(ban.banned_by.split(/[!@]/)[0]).appendTo($tr);
-                    $('<td></td>').text(require('utils/formatdate')(new Date(parseInt(ban.banned_at, 10) * 1000))).appendTo($tr);
+                    $('<td></td>').text(formatdate(new Date(parseInt(ban.banned_at, 10) * 1000))).appendTo($tr);
                     $('<td><i class="fa fa-rtimes remove-ban"></i></td>').appendTo($tr);
 
                     $table.append($tr);
@@ -158,8 +152,9 @@ define('ui/channelinfo/view', function(require, exports, module) {
             event.preventDefault();
             this.$el.find('.channel-banlist table').toggle();
 
-            if(!this.$el.find('.channel-banlist table').is(':visible'))
+            if(!this.$el.find('.channel-banlist table').is(':visible')) {
                 return;
+            }
 
             var channel = this.model.get('channel'),
                 network = channel.get('network');

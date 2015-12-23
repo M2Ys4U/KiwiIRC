@@ -1,18 +1,15 @@
-define('ui/newconnection/', function(require, exports, module) {
-    module.exports = Backbone.Collection.extend({
+define('ui/newconnection', ['lib/backbone', 'ui/newconnection/view', 'misc/gateway'], function (Backbone, NewConnetionView, Gateway) {
+    return Backbone.Collection.extend({
         initialize: function() {
-            this.view = new (require('./view'))({model: this});
+            this.view = new NewConnetionView({model: this});
 
             this.view.bind('server_connect', this.onMakeConnection, this);
-
         },
-
 
         populateDefaultServerSettings: function() {
             var defaults = _kiwi.global.defaultServerSettings();
             this.view.populateFields(defaults);
         },
-
 
         onMakeConnection: function(new_connection_event) {
             var that = this;
@@ -21,7 +18,7 @@ define('ui/newconnection/', function(require, exports, module) {
 
             this.view.networkConnecting();
 
-            _kiwi.gateway.newConnection({
+            Gateway.instance().newConnection({
                 nick: new_connection_event.nick,
                 host: new_connection_event.server,
                 port: new_connection_event.port,
@@ -32,7 +29,6 @@ define('ui/newconnection/', function(require, exports, module) {
                 that.onNewNetwork(err, network);
             });
         },
-
 
         onNewNetwork: function(err, network) {
             // Show any errors if given

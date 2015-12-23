@@ -1,7 +1,7 @@
 var fs            = require('fs'),
-    path          = require('path'),
     uglifyJS      = require('uglify-js'),
     po2json       = require('po2json'),
+    requirejs     = require('requirejs'),
     sourceListing = require('./sourcelisting'),
     package_json  = require('../../package.json');
 
@@ -41,12 +41,65 @@ if (!require('./configloader.js')()) {
     process.exit(1);
 }
 
+var requirejs_config = {
+    baseUrl: global.config.public_http + '/src',
+    out: global.config.public_http + 'assets/kiwi.rjs.js',
+    name: 'app',
+    map: {
+        'lib/backbone': {
+            'underscore': 'lib/lodash'
+        }
+    },
+    require: ['../assets/libs/engine.io'],
+    optimize: 'none',
+    paths: {
+        'jquery': 'empty:',
+        'lib/jed': 'empty:',
+        'lib/backbone': '../assets/libs/backbone.min',
+        'lib/lodash': '../assets/libs/lodash.min',
+        'lib/engine.io': '../assets/libs/engine.io',
+        'lib/engine.io.tools': '../assets/libs/engine.io.tools',
+        'components': 'components/index',
+        'components/event': 'components/event',
+        'components/network': 'components/network',
+        'components/controlinput': 'components/controlinput',
+        'ui/application': 'ui/application/index',
+        'ui/application/view': 'ui/application/view',
+        'ui/paneltabs': 'ui/paneltabs/index',
+        'ui/paneltabs/tabs': 'ui/paneltabs/tabs',
+        'ui/userbox': 'ui/userbox/index',
+        'ui/menubox': 'ui/menubox/index',
+        'ui/channelinfo': 'ui/channelinfo/index',
+        'ui/channelinfo/view': 'ui/channelinfo/view',
+        'ui/messagelist': 'ui/messagelist/index',
+        'ui/messagelist/message': 'ui/messagelist/message',
+        'ui/messagelist/messages': 'ui/messagelist/messages',
+        'ui/messagelist/message_view': 'ui/messagelist/message_view',
+        'ui/mediamessage': 'ui/mediamessage/index',
+        'ui/nickchange': 'ui/nickchange/index',
+        'ui/favicon': 'ui/favicon/index',
+        'ui/notification': 'ui/notification/index',
+        'ui/networkpanellist': 'ui/networkpanellist/index',
+        'ui/networkpanellist/tabs': 'ui/networkpanellist/tabs',
+        'ui/controlbox': 'ui/controlbox/index',
+        'ui/autocomplete': 'ui/autocomplete/index',
+        'ui/newconnection': 'ui/newconnection/index',
+        'ui/newconnection/view': 'ui/newconnection/view',
+        'ui/rightbar': 'ui/rightbar/index',
+        'ui/topicbar': 'ui/topicbar/index',
+        'ui/apptoolbar': 'ui/apptoolbar/index',
+        'ui/channeltools': 'ui/channeltools/index',
+        'ui/statusmessage': 'ui/statusmessage/index',
+        'ui/resizehandler': 'ui/resizehandler/index',
+    }
+};
 
+requirejs.optimize(requirejs_config);
 
 var source_files = sourceListing(global.config.public_http + '/src/');
 
 /**
- * Build the kiwi.js/kiwi.min.js files
+ * Build the kiwi.js/kiwi.'helpers/formatdate' files
  */
 concat(source_files, function (err, src) {
     if (!err) {

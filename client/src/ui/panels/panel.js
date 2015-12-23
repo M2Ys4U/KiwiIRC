@@ -1,22 +1,19 @@
-define('ui/panels/panel', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.Model.extend({
-        initialize: function (attributes) {
+define('ui/panels/panel', ['lib/backbone', 'ui/application', 'ui/panels/panel_view', 'helpers/events'], function (Backbone, Application, PanelView, events) {
+    return Backbone.Model.extend({
+        initialize: function () {
             var name = this.get("name") || "";
-            this.view = new (require('ui/panels/panel_view'))({"model": this, "name": name});
+            this.view = new PanelView({"model": this, "name": name});
             this.set({
                 "scrollback": [],
                 "name": name
             }, {"silent": true});
 
-            _kiwi.global.events.emit('panel:created', {panel: this});
+            events.emit('panel:created', {panel: this});
         },
 
         close: function () {
             Application.instance().panels.trigger('close', this);
-            _kiwi.global.events.emit('panel:close', {panel: this});
+            events.emit('panel:close', {panel: this});
 
             if (this.view) {
                 this.view.unbind();

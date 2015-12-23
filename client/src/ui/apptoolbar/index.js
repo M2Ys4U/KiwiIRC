@@ -1,8 +1,5 @@
-define('ui/apptoolbar/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/apptoolbar', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         events: {
             'click .settings': 'clickSettings',
             'click .startup': 'clickStartup'

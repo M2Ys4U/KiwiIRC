@@ -1,8 +1,5 @@
-define('ui/statusmessage/', function(require, exports, module) {
-
-    var Application = require('ui/application/');
-
-    module.exports = Backbone.View.extend({
+define('ui/statusmessage', ['lib/backbone', 'ui/application'], function (Backbone, Application) {
+    return Backbone.View.extend({
         initialize: function () {
             this.$el.hide();
 
@@ -19,7 +16,9 @@ define('ui/statusmessage/', function(require, exports, module) {
             this.$el.text(text).addClass(opt.type);
             this.$el.slideDown($.proxy(Application.instance().view.doLayout, Application.instance().view));
 
-            if (opt.timeout) this.doTimeout(opt.timeout);
+            if (opt.timeout) {
+                this.doTimeout(opt.timeout);
+            }
         },
 
         html: function (html, opt) {
@@ -31,7 +30,9 @@ define('ui/statusmessage/', function(require, exports, module) {
             this.$el.html(html).addClass(opt.type);
             this.$el.slideDown($.proxy(Application.instance().view.doLayout, Application.instance().view));
 
-            if (opt.timeout) this.doTimeout(opt.timeout);
+            if (opt.timeout) {
+                this.doTimeout(opt.timeout);
+            }
         },
 
         hide: function () {
@@ -39,7 +40,10 @@ define('ui/statusmessage/', function(require, exports, module) {
         },
 
         doTimeout: function (length) {
-            if (this.tmr) clearTimeout(this.tmr);
+            if (this.tmr) {
+                clearTimeout(this.tmr);
+            }
+
             var that = this;
             this.tmr = setTimeout(function () { that.hide(); }, length);
         }
